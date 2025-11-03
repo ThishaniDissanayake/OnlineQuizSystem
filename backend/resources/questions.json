@@ -1,0 +1,4 @@
+[
+  { "id": 1, "question": "What is 2 + 2?", "options": ["1","2","3","4"], "answer": "4" },
+  { "id": 2, "question": "Capital of Sri Lanka?", "options": ["Colombo","Kandy","Galle","Jaffna"], "answer": "Colombo" }
+]
