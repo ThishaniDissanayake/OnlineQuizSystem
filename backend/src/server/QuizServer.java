@@ -9,9 +9,14 @@ public class QuizServer {
     private static ServerSocket serverSocket;
     private static ExecutorService threadPool = Executors.newFixedThreadPool(10);
     private static List<ClientHandler> connectedClients = Collections.synchronizedList(new ArrayList<>());
+    private static HttpServer httpServer;
 
     public static void main(String[] args) {
         try {
+            // Start HTTP API server
+            httpServer = new HttpServer();
+            httpServer.start();
+            
             serverSocket = new ServerSocket(PORT);
             System.out.println("✅ Quiz Server started on port " + PORT);
 
@@ -29,6 +34,7 @@ public class QuizServer {
         } finally {
             try {
                 if (serverSocket != null) serverSocket.close();
+                if (httpServer != null) httpServer.stop();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -38,5 +44,10 @@ public class QuizServer {
     // Method for future use (to get connected student names)
     public static List<ClientHandler> getConnectedClients() {
         return connectedClients;
+    }
+    
+    public static void removeClient(ClientHandler handler) {
+        connectedClients.remove(handler);
+        System.out.println("Client removed. Connected clients: " + connectedClients.size());
     }
 }

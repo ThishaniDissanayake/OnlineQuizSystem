@@ -20,8 +20,11 @@ public class ClientHandler implements Runnable {
             output = new PrintWriter(socket.getOutputStream(), true);
 
             // Receive student name
-            output.println("Enter your name: ");
+            output.println("WELCOME");
             studentName = input.readLine();
+            if (studentName == null || studentName.trim().isEmpty()) {
+                studentName = "Student-" + socket.getPort();
+            }
             System.out.println("🧑 Student joined: " + studentName);
 
             // Notify client
@@ -30,7 +33,7 @@ public class ClientHandler implements Runnable {
             // Keep connection open for later communication
             while (true) {
                 String message = input.readLine();
-                if (message == null || message.equalsIgnoreCase("exit")) break;
+                if (message == null || message.equalsIgnoreCase("QUIT")) break;
                 System.out.println(studentName + ": " + message);
             }
 
@@ -42,10 +45,21 @@ public class ClientHandler implements Runnable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            QuizServer.removeClient(this);
         }
     }
 
     public String getStudentName() {
         return studentName;
+    }
+    
+    public String getClientName() {
+        return studentName != null ? studentName : "Unknown";
+    }
+    
+    public void send(String message) {
+        if (output != null) {
+            output.println(message);
+        }
     }
 }
