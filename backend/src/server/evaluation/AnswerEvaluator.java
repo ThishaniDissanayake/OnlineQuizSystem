@@ -1,4 +1,4 @@
-package backend.src.server.evaluation;
+package server.evaluation;
 
 public class AnswerEvaluator {
     
