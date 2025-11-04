@@ -1,4 +1,4 @@
-package backend.src.server.questions;
+package server.questions;
 
 public class QuestionManager {
     

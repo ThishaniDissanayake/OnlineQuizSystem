@@ -1,4 +1,4 @@
-package backend.src.server.results;
+package server.results;
 
 public class ResultDistributor {
     

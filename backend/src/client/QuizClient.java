@@ -1,4 +1,4 @@
-package backend.src.client;
+package client;
 
 public class QuizClient {
     
