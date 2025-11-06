@@ -46,4 +46,13 @@ export class HttpClient {
   static async startQuiz() {
     return await this.post(ENDPOINTS.START_QUIZ);
   }
+
+  // === NEW QUESTION APIs ===
+  static async getQuestions() {
+    return await this.get(ENDPOINTS.QUESTIONS);
+  }
+
+  static async submitAnswers(answers) {
+    return await this.post(ENDPOINTS.SUBMIT_ANSWERS, { answers });
+  }
 }
