@@ -34,11 +34,11 @@ public class ClientHandler implements Runnable {
             while (true) {
                 String message = input.readLine();
                 if (message == null || message.equalsIgnoreCase("QUIT")) break;
-                System.out.println(studentName + ": " + message);
+                System.out.println("[!] Connection lost with " + studentName);
             }
 
         } catch (IOException e) {
-            System.out.println("❌ Connection lost with " + studentName);
+            System.out.println("⚠️ Connection lost with " + studentName);
         } finally {
             try {
                 socket.close();
