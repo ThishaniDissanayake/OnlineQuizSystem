@@ -1,0 +1,8 @@
+# Required Dependencies
+- gson-2.11.0.jar
+
+Download from:
+https://repo1.maven.org/maven2/com/google/code/gson/gson/2.11.0/gson-2.11.0.jar
+
+Place it inside:
+backend/lib/
