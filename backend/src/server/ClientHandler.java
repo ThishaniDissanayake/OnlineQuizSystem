@@ -2,11 +2,15 @@ package server;
 
 import java.io.*;
 import java.net.*;
+import server.questions.Question;
+import java.util.List;
 
 public class ClientHandler implements Runnable {
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
+    private ObjectOutputStream objectOutput;
+    private ObjectInputStream objectInput;
     private String studentName;
 
     public ClientHandler(Socket socket) {
@@ -16,6 +20,11 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
+            // Initialize streams - ObjectOutputStream must be created first
+            objectOutput = new ObjectOutputStream(socket.getOutputStream());
+            objectOutput.flush();
+            objectInput = new ObjectInputStream(socket.getInputStream());
+            
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             output = new PrintWriter(socket.getOutputStream(), true);
 
@@ -60,6 +69,32 @@ public class ClientHandler implements Runnable {
     public void send(String message) {
         if (output != null) {
             output.println(message);
+        }
+    }
+    
+    // Member 2: Send questions using ObjectOutputStream
+    public void sendQuestions(List<Question> questions) {
+        try {
+            if (objectOutput != null) {
+                objectOutput.writeObject(questions);
+                objectOutput.flush();
+                System.out.println("📤 Sent " + questions.size() + " questions to " + studentName);
+            }
+        } catch (IOException e) {
+            System.out.println("⚠️ Error sending questions to " + studentName + ": " + e.getMessage());
+        }
+    }
+    
+    // Member 2: Send individual question using ObjectOutputStream
+    public void sendQuestion(Question question) {
+        try {
+            if (objectOutput != null) {
+                objectOutput.writeObject(question);
+                objectOutput.flush();
+                System.out.println("📤 Sent question to " + studentName);
+            }
+        } catch (IOException e) {
+            System.out.println("⚠️ Error sending question to " + studentName + ": " + e.getMessage());
         }
     }
 }

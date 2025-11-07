@@ -121,11 +121,16 @@ public class HttpServer {
 
             if ("POST".equals(exchange.getRequestMethod())) {
                 List<ClientHandler> clients = QuizServer.getConnectedClients();
+                
+                // Member 2: Broadcast questions using ObjectOutputStream
+                QuizServer.broadcastQuestions();
+                
+                // Also send START_QUIZ message via text
                 for (ClientHandler client : clients) {
                     client.send("START_QUIZ");
                 }
 
-                String response = "{\"success\":true,\"message\":\"Quiz started\",\"studentCount\":" + clients.size() + "}";
+                String response = "{\"success\":true,\"message\":\"Quiz started and questions broadcast via Socket\",\"studentCount\":" + clients.size() + "}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, response.length());
                 OutputStream os = exchange.getResponseBody();

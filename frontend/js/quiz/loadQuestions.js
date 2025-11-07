@@ -4,7 +4,7 @@ import { createQuestionCard } from "./uiHelpers.js";
 
 export async function loadQuestions(container) {
   try {
-    const data = await HttpClient.get(`${ENDPOINTS.QUESTIONS}/questions`);
+    const data = await HttpClient.get(ENDPOINTS.QUESTIONS);
     container.innerHTML = "";
 
     if (!data || data.length === 0) {
