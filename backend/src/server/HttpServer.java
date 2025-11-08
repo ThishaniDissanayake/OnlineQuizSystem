@@ -7,7 +7,10 @@ import com.google.gson.Gson;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class HttpServer {
     private com.sun.net.httpserver.HttpServer server;
@@ -19,17 +22,24 @@ public class HttpServer {
 
         server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(HTTP_PORT), 0);
         
-        // --- Question API ---
+        // --- API Routes (higher priority) ---
         server.createContext("/api/questions", new QuestionsHandler());
-        
-        // --- Other APIs ---
+        server.createContext("/api/questions/add", new AddQuestionHandler());
+        server.createContext("/api/questions/update", new UpdateQuestionHandler());
+        server.createContext("/api/questions/delete", new DeleteQuestionHandler());
         server.createContext("/api/students", new StudentsHandler());
         server.createContext("/api/quiz/start", new StartQuizHandler());
         server.createContext("/api/status", new StatusHandler());
         
+        // --- Static File Serving (catch-all, lowest priority) ---
+        server.createContext("/", new StaticFileHandler());
+        
         server.setExecutor(null);
         server.start();
         System.out.println("✅ HTTP API Server started on port " + HTTP_PORT);
+        System.out.println("📄 Serving static files from: ./frontend/");
+        System.out.println("🎓 Student Portal: http://localhost:8080/pages/student.html");
+        System.out.println("📊 Admin Portal: http://localhost:8080/admin/dashboard.html");
     }
 
     public void stop() {
@@ -38,7 +48,86 @@ public class HttpServer {
         }
     }
 
-    // ---  Handler for /api/questions ---
+    // --- Static File Handler ---
+    static class StaticFileHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String requestPath = exchange.getRequestURI().getPath();
+            
+            // Skip API routes
+            if (requestPath.startsWith("/api/")) {
+                exchange.sendResponseHeaders(404, -1);
+                return;
+            }
+            
+            // Default to index.html
+            if (requestPath.equals("/")) {
+                requestPath = "/index.html";
+            }
+            
+            System.out.println("📄 Static request: " + requestPath);
+            System.out.println("   Current directory: " + new File(".").getAbsolutePath());
+            
+            // Try multiple possible locations
+            File file = null;
+            String[] possiblePaths = {
+                ".." + File.separator + "frontend" + requestPath,  // Go up one level to find frontend
+                "frontend" + requestPath,
+                "." + requestPath
+            };
+            
+            for (String path : possiblePaths) {
+                File testFile = new File(path);
+                System.out.println("   Trying: " + testFile.getAbsolutePath() + " - Exists: " + testFile.exists());
+                if (testFile.exists() && !testFile.isDirectory()) {
+                    file = testFile;
+                    break;
+                }
+            }
+            
+            if (file == null) {
+                System.out.println("   ❌ Not found in any location");
+                String response = "404 - File Not Found: " + requestPath + 
+                                "\nCurrent dir: " + new File(".").getAbsolutePath() +
+                                "\nTried: frontend" + requestPath;
+                exchange.sendResponseHeaders(404, response.length());
+                OutputStream os = exchange.getResponseBody();
+                os.write(response.getBytes());
+                os.close();
+                return;
+            }
+            
+            // Determine content type
+            String contentType = getContentType(requestPath);
+            
+            System.out.println("   ✅ Serving: " + file.getAbsolutePath() + " (" + contentType + ")");
+            
+            byte[] fileBytes = Files.readAllBytes(file.toPath());
+            
+            exchange.getResponseHeaders().set("Content-Type", contentType);
+            exchange.getResponseHeaders().set("Cache-Control", "no-cache, no-store, must-revalidate");
+            exchange.sendResponseHeaders(200, fileBytes.length);
+            
+            OutputStream os = exchange.getResponseBody();
+            os.write(fileBytes);
+            os.close();
+        }
+        
+        private String getContentType(String path) {
+            if (path.endsWith(".html")) return "text/html; charset=UTF-8";
+            if (path.endsWith(".css")) return "text/css; charset=UTF-8";
+            if (path.endsWith(".js")) return "application/javascript; charset=UTF-8";
+            if (path.endsWith(".json")) return "application/json";
+            if (path.endsWith(".png")) return "image/png";
+            if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
+            if (path.endsWith(".gif")) return "image/gif";
+            if (path.endsWith(".svg")) return "image/svg+xml";
+            if (path.endsWith(".ico")) return "image/x-icon";
+            return "text/plain";
+        }
+    }
+
+    // --- GET /api/questions - View all questions (Admin) ---
     static class QuestionsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -55,7 +144,7 @@ public class HttpServer {
                 List<Question> questions = QuestionManager.getAllQuestions();
                 String jsonResponse = new Gson().toJson(questions);
 
-                byte[] response = jsonResponse.getBytes();
+                byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, response.length);
                 OutputStream os = exchange.getResponseBody();
@@ -67,7 +156,170 @@ public class HttpServer {
         }
     }
 
-    // --- Handler for /api/students ---
+    // --- POST /api/questions/add - Add new question (Admin - Member 2) ---
+    static class AddQuestionHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    InputStream is = exchange.getRequestBody();
+                    String body = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+
+                    Question question = new Gson().fromJson(body, Question.class);
+                    
+                    if (question.getQuestion() == null || question.getQuestion().trim().isEmpty()) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Question text is required\"}");
+                        return;
+                    }
+                    if (question.getOptions() == null || question.getOptions().size() != 4) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Exactly 4 options are required\"}");
+                        return;
+                    }
+                    if (question.getAnswer() == null || question.getAnswer().trim().isEmpty()) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Correct answer is required\"}");
+                        return;
+                    }
+
+                    boolean success = QuestionManager.addQuestion(question);
+                    
+                    if (success) {
+                        sendResponse(exchange, 200, "{\"success\":true,\"message\":\"Question added successfully\"}");
+                    } else {
+                        sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Failed to add question\"}");
+                    }
+
+                } catch (Exception e) {
+                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid request: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    // --- PUT /api/questions/update?id=X - Update question (Admin - Member 2) ---
+    static class UpdateQuestionHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "PUT, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("PUT".equals(exchange.getRequestMethod())) {
+                try {
+                    String query = exchange.getRequestURI().getQuery();
+                    if (query == null || !query.startsWith("id=")) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Question ID is required\"}");
+                        return;
+                    }
+                    int id = Integer.parseInt(query.substring(3));
+
+                    InputStream is = exchange.getRequestBody();
+                    String body = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+
+                    Question question = new Gson().fromJson(body, Question.class);
+
+                    if (question.getQuestion() == null || question.getQuestion().trim().isEmpty()) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Question text is required\"}");
+                        return;
+                    }
+                    if (question.getOptions() == null || question.getOptions().size() != 4) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Exactly 4 options are required\"}");
+                        return;
+                    }
+                    if (question.getAnswer() == null || question.getAnswer().trim().isEmpty()) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Correct answer is required\"}");
+                        return;
+                    }
+
+                    boolean success = QuestionManager.updateQuestion(id, question);
+                    
+                    if (success) {
+                        sendResponse(exchange, 200, "{\"success\":true,\"message\":\"Question updated successfully\"}");
+                    } else {
+                        sendResponse(exchange, 404, "{\"success\":false,\"message\":\"Question not found\"}");
+                    }
+
+                } catch (NumberFormatException e) {
+                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid question ID\"}");
+                } catch (Exception e) {
+                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid request: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    // --- DELETE /api/questions/delete?id=X - Delete question (Admin - Member 2) ---
+    static class DeleteQuestionHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("DELETE".equals(exchange.getRequestMethod())) {
+                try {
+                    String query = exchange.getRequestURI().getQuery();
+                    if (query == null || !query.startsWith("id=")) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Question ID is required\"}");
+                        return;
+                    }
+                    int id = Integer.parseInt(query.substring(3));
+
+                    boolean success = QuestionManager.deleteQuestion(id);
+                    
+                    if (success) {
+                        sendResponse(exchange, 200, "{\"success\":true,\"message\":\"Question deleted successfully\"}");
+                    } else {
+                        sendResponse(exchange, 404, "{\"success\":false,\"message\":\"Question not found\"}");
+                    }
+
+                } catch (NumberFormatException e) {
+                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid question ID\"}");
+                } catch (Exception e) {
+                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid request: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    private static void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
+        byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.sendResponseHeaders(statusCode, responseBytes.length);
+        OutputStream os = exchange.getResponseBody();
+        os.write(responseBytes);
+        os.close();
+    }
+
+    // --- Handler for /api/students - Shows BOTH TCP and WebSocket clients ---
     static class StudentsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -81,17 +333,30 @@ public class HttpServer {
             }
 
             if ("GET".equals(exchange.getRequestMethod())) {
-                List<ClientHandler> clients = QuizServer.getConnectedClients();
+                List<ClientHandler> tcpClients = QuizServer.getConnectedClients();
+                List<WebSocketClient> wsClients = QuizServer.getWebSocketClients();
+                
                 StringBuilder json = new StringBuilder("[");
-                for (int i = 0; i < clients.size(); i++) {
-                    ClientHandler client = clients.get(i);
+                int id = 1;
+                
+                for (ClientHandler client : tcpClients) {
+                    if (id > 1) json.append(",");
                     json.append("{")
-                        .append("\"id\":").append(i + 1).append(",")
-                        .append("\"name\":\"").append(client.getClientName()).append("\",")
+                        .append("\"id\":").append(id++).append(",")
+                        .append("\"name\":\"").append(client.getClientName()).append(" (TCP)\",")
                         .append("\"connectedAt\":\"").append(new java.util.Date()).append("\"")
                         .append("}");
-                    if (i < clients.size() - 1) json.append(",");
                 }
+                
+                for (WebSocketClient client : wsClients) {
+                    if (id > 1) json.append(",");
+                    json.append("{")
+                        .append("\"id\":").append(id++).append(",")
+                        .append("\"name\":\"").append(client.getClientName()).append(" (Web)\",")
+                        .append("\"connectedAt\":\"").append(new java.util.Date()).append("\"")
+                        .append("}");
+                }
+                
                 json.append("]");
 
                 byte[] response = json.toString().getBytes();
@@ -120,17 +385,9 @@ public class HttpServer {
             }
 
             if ("POST".equals(exchange.getRequestMethod())) {
-                List<ClientHandler> clients = QuizServer.getConnectedClients();
-                
-                // Member 2: Broadcast questions using ObjectOutputStream
                 QuizServer.broadcastQuestions();
-                
-                // Also send START_QUIZ message via text
-                for (ClientHandler client : clients) {
-                    client.send("START_QUIZ");
-                }
 
-                String response = "{\"success\":true,\"message\":\"Quiz started and questions broadcast via Socket\",\"studentCount\":" + clients.size() + "}";
+                String response = "{\"success\":true,\"message\":\"Quiz started\"}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, response.length());
                 OutputStream os = exchange.getResponseBody();
@@ -148,6 +405,7 @@ public class HttpServer {
         public void handle(HttpExchange exchange) throws IOException {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
 
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
@@ -155,10 +413,9 @@ public class HttpServer {
             }
 
             if ("GET".equals(exchange.getRequestMethod())) {
-                String response = "{\"status\":\"online\",\"port\":5000,\"connectedStudents\":" 
-                    + QuizServer.getConnectedClients().size() + "}";
+                String response = "{\"status\":\"online\",\"port\":" + HTTP_PORT + ",\"timestamp\":" + System.currentTimeMillis() + "}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(200, response.length());
+                exchange.sendResponseHeaders(200, response.getBytes().length);
                 OutputStream os = exchange.getResponseBody();
                 os.write(response.getBytes());
                 os.close();

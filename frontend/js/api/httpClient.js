@@ -1,6 +1,5 @@
 import { ENDPOINTS } from "./endpoints.js";
 
-// HTTP Client utility for API calls
 export class HttpClient {
   static async get(url) {
     try {
@@ -34,7 +33,41 @@ export class HttpClient {
     }
   }
 
-  // Specific API methods
+  static async put(url, data = {}) {
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("PUT request failed:", error);
+      throw error;
+    }
+  }
+
+  static async delete(url) {
+    try {
+      const response = await fetch(url, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("DELETE request failed:", error);
+      throw error;
+    }
+  }
+
+  // Member 1 APIs
   static async checkServerStatus() {
     return await this.get(ENDPOINTS.STATUS);
   }
@@ -47,12 +80,20 @@ export class HttpClient {
     return await this.post(ENDPOINTS.START_QUIZ);
   }
 
-  // === NEW QUESTION APIs ===
+  // Member 2: Question Management APIs
   static async getQuestions() {
     return await this.get(ENDPOINTS.QUESTIONS);
   }
 
-  static async submitAnswers(answers) {
-    return await this.post(ENDPOINTS.SUBMIT_ANSWERS, { answers });
+  static async addQuestion(questionData) {
+    return await this.post(ENDPOINTS.ADD_QUESTION, questionData);
+  }
+
+  static async updateQuestion(id, questionData) {
+    return await this.put(`${ENDPOINTS.UPDATE_QUESTION}?id=${id}`, questionData);
+  }
+
+  static async deleteQuestion(id) {
+    return await this.delete(`${ENDPOINTS.DELETE_QUESTION}?id=${id}`);
   }
 }

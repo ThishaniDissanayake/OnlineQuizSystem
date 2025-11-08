@@ -17,39 +17,57 @@
         </header>
 
         <main>
+            <!-- Question Management Section - Member 2 -->
+            <section class="question-management">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📝 Question Management</h2>
+                        <button id="add-question-btn" class="btn btn-success">➕ Add New Question</button>
+                    </div>
+                    
+                    <div id="questions-list" class="questions-list">
+                        <div class="loading">Loading questions...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Server Control - Member 1 -->
             <section class="control-panel">
                 <div class="card">
-                    <h2>📊 Server Control</h2>
+                    <h2>🎮 Server Control</h2>
                     <div class="server-info">
                         <p><strong>Port:</strong> <span id="server-port">5000</span></p>
                         <p><strong>Connected Students:</strong> <span id="student-count">0</span></p>
+                        <p><strong>Total Questions:</strong> <span id="question-count">0</span></p>
                     </div>
                     <div class="button-group">
                         <button id="start-quiz-btn" class="btn btn-primary" disabled>
                             🚀 Start Quiz
                         </button>
                         <button id="refresh-btn" class="btn btn-secondary">
-                            🔄 Refresh List
+                            🔄 Refresh
                         </button>
                     </div>
                 </div>
             </section>
 
+            <!-- Connected Students - Member 1 -->
             <section class="students-section">
                 <div class="card">
                     <h2>👥 Connected Students</h2>
                     <div id="students-list" class="students-list">
                         <div class="empty-state">
-                            <p>📭 No students connected yet</p>
+                            <p>🔭 No students connected yet</p>
                             <p class="hint">Students will appear here when they connect to the server</p>
                         </div>
                     </div>
                 </div>
             </section>
 
+            <!-- Activity Log - Member 1 -->
             <section class="logs-section">
                 <div class="card">
-                    <h2>📝 Activity Log</h2>
+                    <h2>📋 Activity Log</h2>
                     <div id="activity-log" class="activity-log">
                         <div class="log-entry">
                             <span class="timestamp">[System]</span>
@@ -59,6 +77,62 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Add/Edit Question Modal -->
+    <div id="question-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Add New Question</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="question-form">
+                    <input type="hidden" id="question-id">
+                    
+                    <div class="form-group">
+                        <label>Question Text:</label>
+                        <textarea id="question-text" rows="3" required placeholder="Enter your question here..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Option A:</label>
+                        <input type="text" id="option-a" required placeholder="First option">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Option B:</label>
+                        <input type="text" id="option-b" required placeholder="Second option">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Option C:</label>
+                        <input type="text" id="option-c" required placeholder="Third option">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Option D:</label>
+                        <input type="text" id="option-d" required placeholder="Fourth option">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Correct Answer:</label>
+                        <select id="correct-answer" required>
+                            <option value="">-- Select Correct Answer --</option>
+                            <option value="A">Option A</option>
+                            <option value="B">Option B</option>
+                            <option value="C">Option C</option>
+                            <option value="D">Option D</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="save-question-btn">Save Question</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="../js/admin/app.js"></script>

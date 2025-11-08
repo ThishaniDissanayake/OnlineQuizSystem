@@ -1,4 +1,24 @@
 [
-  { "id": 1, "question": "What is 2 + 2?", "options": ["1","2","3","4"], "answer": "4" },
-  { "id": 2, "question": "Capital of Sri Lanka?", "options": ["Colombo","Kandy","Galle","Jaffna"], "answer": "Colombo" }
+  {
+    "id": 1,
+    "question": "1+0",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "answer": "2"
+  },
+  {
+    "id": 2,
+    "question": "q1",
+    "options": [
+      "1",
+      "2",
+      "4",
+      "3"
+    ],
+    "answer": "1"
+  }
 ]
