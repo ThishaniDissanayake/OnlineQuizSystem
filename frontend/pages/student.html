@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - Quiz System</title>
+    <link rel="stylesheet" href="../styles/student.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👨‍🎓 Student Portal</h1>
+            <div class="connection-status">
+                <span id="connection-indicator" class="status-dot offline"></span>
+                <span id="connection-text">Not Connected</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Connection Section -->
+            <section id="connection-section" class="card">
+                <h2>Connect to Quiz Server</h2>
+                <p style="color: #6b7280; margin-bottom: 20px;">
+                    Enter your name to join the quiz session
+                </p>
+                <form id="connection-form">
+                    <div class="form-group">
+                        <label>Your Name:</label>
+                        <input 
+                            type="text" 
+                            id="student-name" 
+                            placeholder="Enter your name" 
+                            required
+                            autocomplete="off"
+                        >
+                    </div>
+                   
+                    <button type="submit" class="btn btn-primary">
+                        🔌 Attempt Quiz
+                    </button>
+                </form>
+                
+            </section>
+
+            <!-- Waiting Section -->
+            <section id="waiting-section" class="card" style="display: none;">
+                <div class="waiting-content">
+                    <div class="spinner"></div>
+                    <h2>Connected! 🎉</h2>
+                    <p>Waiting for the quiz to start...</p>
+                    <p class="student-name-display"></p>
+                  
+                </div>
+            </section>
+
+            <!-- Quiz Section -->
+            <section id="quiz-section" class="card" style="display: none;">
+                <div class="quiz-header">
+                    <h2>📝 Quiz in Progress</h2>
+                    <div class="quiz-info">
+                        <span>Answered: <span id="current-question">0</span> / <span id="total-questions">0</span></span>
+                    </div>
+                </div>
+                <div id="questions-container"></div>
+                <button id="submit-answers-btn" class="btn btn-primary" disabled>
+                    Submit Answers
+                </button>
+                <p style="text-align: center; color: #6b7280; margin-top: 15px; font-size: 14px;">
+                    Answer all questions to enable submission
+                </p>
+            </section>
+        </main>
+    </div>
+  
+
+
+    <script type="module" src="../js/student/app.js"></script>
+</body>
+</html>

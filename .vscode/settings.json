@@ -1,5 +1,5 @@
 {
-  "java.project.sourcePaths": ["backend/src"],
-  "java.project.outputPath": "backend/out",
+  "java.import.gradle.enabled": false,
+  "java.import.maven.enabled": false,
   "java.configuration.updateBuildConfiguration": "automatic"
 }
