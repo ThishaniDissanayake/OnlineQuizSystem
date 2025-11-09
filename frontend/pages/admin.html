@@ -17,16 +17,23 @@
         </header>
 
         <main>
-            <!-- Question Management Section - Member 2 -->
-            <section class="question-management">
+            <!-- Quick Actions Section -->
+            <section class="quick-actions">
                 <div class="card">
-                    <div class="card-header">
-                        <h2>📝 Question Management</h2>
-                        <button id="add-question-btn" class="btn btn-success">➕ Add New Question</button>
-                    </div>
-                    
-                    <div id="questions-list" class="questions-list">
-                        <div class="loading">Loading questions...</div>
+                    <h2>⚡ Quick Actions</h2>
+                    <div class="action-buttons">
+                        <a href="questions.html" class="action-card">
+                            <div class="action-icon">📝</div>
+                            <h3>Manage Questions</h3>
+                            <p>Add, edit, or delete quiz questions</p>
+                            <span class="action-arrow">→</span>
+                        </a>
+                        <div class="action-card" id="start-quiz-card">
+                            <div class="action-icon">🚀</div>
+                            <h3>Start Quiz</h3>
+                            <p>Begin the quiz for all connected students</p>
+                            <span class="action-arrow">→</span>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -77,62 +84,6 @@
                 </div>
             </section>
         </main>
-    </div>
-
-    <!-- Add/Edit Question Modal -->
-    <div id="question-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title">Add New Question</h2>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="question-form">
-                    <input type="hidden" id="question-id">
-                    
-                    <div class="form-group">
-                        <label>Question Text:</label>
-                        <textarea id="question-text" rows="3" required placeholder="Enter your question here..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Option A:</label>
-                        <input type="text" id="option-a" required placeholder="First option">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Option B:</label>
-                        <input type="text" id="option-b" required placeholder="Second option">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Option C:</label>
-                        <input type="text" id="option-c" required placeholder="Third option">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Option D:</label>
-                        <input type="text" id="option-d" required placeholder="Fourth option">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Correct Answer:</label>
-                        <select id="correct-answer" required>
-                            <option value="">-- Select Correct Answer --</option>
-                            <option value="A">Option A</option>
-                            <option value="B">Option B</option>
-                            <option value="C">Option C</option>
-                            <option value="D">Option D</option>
-                        </select>
-                    </div>
-
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="save-question-btn">Save Question</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 
     <script type="module" src="../js/admin/app.js"></script>

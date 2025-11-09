@@ -9,7 +9,7 @@ import server.questions.Question;
 import server.questions.QuestionManager;
 import server.questions.AnswerManager;
 
-public class WebSocketServer implements Runnable {
+public class WebSocketServer implements Runnable { 
     private static final int WS_PORT = 8081;
     private ServerSocket serverSocket;
     private static List<WebSocketClient> webSocketClients = Collections.synchronizedList(new ArrayList<>());
@@ -326,7 +326,7 @@ class WebSocketClient implements Runnable {
         int b = input.read();
         if (b == -1) return null;
 
-        boolean fin = (b & 0x80) != 0;
+        // boolean fin = (b & 0x80) != 0; // FIN bit - not currently used
         int opcode = b & 0x0F;
 
         if (opcode == 0x08) {

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Management - Quiz Server</title>
+    <link rel="stylesheet" href="../styles/admin.css">
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .questions-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="questions-container">
+        <div class="page-header">
+            <h1>📝 Question Management</h1>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div class="server-status">
+                    <span id="status-indicator" class="status-dot offline"></span>
+                    <span id="status-text">Server Offline</span>
+                </div>
+                <a href="admin.html" class="back-btn">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <h3>Total Questions</h3>
+                <div class="stat-value" id="total-questions">0</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <h3>Server Status</h3>
+                <div class="stat-value" id="server-status-text">Offline</div>
+            </div>
+        </div>
+
+        <section class="question-management">
+            <div class="card">
+                <div class="card-header">
+                    <h2>📋 All Questions</h2>
+                    <button id="add-question-btn" class="btn btn-success">➕ Add New Question</button>
+                </div>
+                
+                <div id="questions-list" class="questions-list">
+                    <div class="loading">Loading questions...</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Add/Edit Question Modal -->
+    <div id="question-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Add New Question</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="question-form">
+                    <input type="hidden" id="question-id">
+                    
+                    <div class="form-group">
+                        <label>Question Text:</label>
+                        <textarea id="question-text" rows="3" required placeholder="Enter your question here..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Option A:</label>
+                        <input type="text" id="option-a" required placeholder="First option">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Option B:</label>
+                        <input type="text" id="option-b" required placeholder="Second option">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Option C:</label>
+                        <input type="text" id="option-c" required placeholder="Third option">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Option D:</label>
+                        <input type="text" id="option-d" required placeholder="Fourth option">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Correct Answer:</label>
+                        <select id="correct-answer" required>
+                            <option value="">-- Select Correct Answer --</option>
+                            <option value="A">Option A</option>
+                            <option value="B">Option B</option>
+                            <option value="C">Option C</option>
+                            <option value="D">Option D</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="save-question-btn">Save Question</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../js/admin/questions-app.js"></script>
+</body>
+</html>
