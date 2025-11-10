@@ -1,5 +1,122 @@
 package server.evaluation;
 
+import server.questions.Question;
+import server.questions.QuestionManager;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Member 4 - Answer Evaluation & Scoring
+ * Evaluates answers from all clients and calculates total marks
+ * Uses synchronized blocks for thread-safe score updates
+ */
 public class AnswerEvaluator {
     
+    // Thread-safe storage for student scores
+    private static final Map<String, Integer> studentScores = new HashMap<>();
+    private static final Map<String, Map<Integer, Boolean>> studentResults = new HashMap<>();
+    
+    /**
+     * Evaluate a single answer for a student
+     * @param studentName Name of the student
+     * @param questionId Question ID
+     * @param studentAnswer Student's answer
+     * @return true if correct, false otherwise
+     */
+    public static synchronized boolean evaluateAnswer(String studentName, int questionId, String studentAnswer) {
+        Question question = QuestionManager.getQuestionById(questionId);
+        
+        if (question == null || studentAnswer == null) {
+            return false;
+        }
+        
+        // Compare answer (case-insensitive)
+        boolean isCorrect = question.getAnswer().trim().equalsIgnoreCase(studentAnswer.trim());
+        
+        // Store result
+        studentResults
+            .computeIfAbsent(studentName, k -> new HashMap<>())
+            .put(questionId, isCorrect);
+        
+        // Update score if correct
+        if (isCorrect) {
+            updateScore(studentName, 1); // 1 mark per correct answer
+        }
+        
+        System.out.println("✓ Evaluated: " + studentName + " Q" + questionId + " = " + 
+                         (isCorrect ? "CORRECT ✓" : "WRONG ✗"));
+        
+        return isCorrect;
+    }
+    
+    /**
+     * Evaluate all answers for a student
+     * @param studentName Name of the student
+     * @param answers Map of questionId -> studentAnswer
+     * @return Total score
+     */
+    public static synchronized int evaluateAllAnswers(String studentName, Map<Integer, String> answers) {
+        int score = 0;
+        
+        for (Map.Entry<Integer, String> entry : answers.entrySet()) {
+            if (evaluateAnswer(studentName, entry.getKey(), entry.getValue())) {
+                score++;
+            }
+        }
+        
+        System.out.println("📊 Final Score for " + studentName + ": " + score + "/" + answers.size());
+        return score;
+    }
+    
+    /**
+     * Thread-safe score update
+     * @param studentName Name of the student
+     * @param marksToAdd Marks to add
+     */
+    private static synchronized void updateScore(String studentName, int marksToAdd) {
+        studentScores.put(studentName, studentScores.getOrDefault(studentName, 0) + marksToAdd);
+    }
+    
+    /**
+     * Get total marks for a student
+     * @param studentName Name of the student
+     * @return Total marks
+     */
+    public static synchronized int getTotalMarks(String studentName) {
+        return studentScores.getOrDefault(studentName, 0);
+    }
+    
+    /**
+     * Get all student scores
+     * @return Map of studentName -> totalScore
+     */
+    public static synchronized Map<String, Integer> getAllScores() {
+        return new HashMap<>(studentScores); // Return copy for thread safety
+    }
+    
+    /**
+     * Get detailed results for a student
+     * @param studentName Name of the student
+     * @return Map of questionId -> isCorrect
+     */
+    public static synchronized Map<Integer, Boolean> getStudentResults(String studentName) {
+        return new HashMap<>(studentResults.getOrDefault(studentName, new HashMap<>()));
+    }
+    
+    /**
+     * Reset all scores and results (for new quiz)
+     */
+    public static synchronized void resetAll() {
+        studentScores.clear();
+        studentResults.clear();
+        System.out.println("🔄 All scores and results reset");
+    }
+    
+    /**
+     * Get total number of questions
+     * @return Total questions
+     */
+    public static int getTotalQuestions() {
+        return QuestionManager.getAllQuestions().size();
+    }
 }

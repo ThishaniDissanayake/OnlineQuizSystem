@@ -3,6 +3,8 @@ package server;
 import com.sun.net.httpserver.*;
 import server.questions.QuestionManager;
 import server.questions.Question;
+import server.evaluation.AnswerEvaluator;
+import server.results.ResultDistributor;
 import com.google.gson.Gson;
 
 import java.io.*;
@@ -30,6 +32,11 @@ public class HttpServer {
         server.createContext("/api/students", new StudentsHandler());
         server.createContext("/api/quiz/start", new StartQuizHandler());
         server.createContext("/api/status", new StatusHandler());
+        
+        // --- Member 4: Answer Evaluation & Scoring API Routes ---
+        server.createContext("/api/results", new ResultsHandler());
+        server.createContext("/api/results/student", new StudentResultHandler());
+        server.createContext("/api/evaluate", new EvaluateAnswersHandler());
         
         // --- Static File Serving (catch-all, lowest priority) ---
         server.createContext("/", new StaticFileHandler());
@@ -419,6 +426,136 @@ public class HttpServer {
                 OutputStream os = exchange.getResponseBody();
                 os.write(response.getBytes());
                 os.close();
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    // --- Member 4: GET /api/results - Get all student scores (Result Board) ---
+    static class ResultsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("GET".equals(exchange.getRequestMethod())) {
+                String jsonResponse = ResultDistributor.getResultBoard();
+                
+                byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(response);
+                os.close();
+                
+                // Also print to console
+                ResultDistributor.printResultBoard();
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    // --- Member 4: GET /api/results/student?name=X - Get individual student result ---
+    static class StudentResultHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("GET".equals(exchange.getRequestMethod())) {
+                try {
+                    String query = exchange.getRequestURI().getQuery();
+                    if (query == null || !query.startsWith("name=")) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Student name is required\"}");
+                        return;
+                    }
+                    
+                    String studentName = java.net.URLDecoder.decode(query.substring(5), "UTF-8");
+                    String jsonResponse = ResultDistributor.getStudentResult(studentName);
+                    
+                    byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length);
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(response);
+                    os.close();
+                    
+                } catch (Exception e) {
+                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid request: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    // --- Member 4: POST /api/evaluate - Evaluate answers and calculate scores ---
+    static class EvaluateAnswersHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    InputStream is = exchange.getRequestBody();
+                    String body = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+
+                    // Expected JSON: {"studentName": "John", "answers": {"1": "A", "2": "B"}}
+                    @SuppressWarnings("unchecked")
+                    java.util.Map<String, Object> requestData = new Gson().fromJson(body, java.util.Map.class);
+                    
+                    String studentName = (String) requestData.get("studentName");
+                    @SuppressWarnings("unchecked")
+                    java.util.Map<String, String> answersMap = (java.util.Map<String, String>) requestData.get("answers");
+                    
+                    if (studentName == null || answersMap == null) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Student name and answers are required\"}");
+                        return;
+                    }
+                    
+                    // Convert String keys to Integer for question IDs
+                    java.util.Map<Integer, String> answers = new java.util.HashMap<>();
+                    for (java.util.Map.Entry<String, String> entry : answersMap.entrySet()) {
+                        answers.put(Integer.parseInt(entry.getKey()), entry.getValue());
+                    }
+                    
+                    // Evaluate all answers
+                    int totalScore = AnswerEvaluator.evaluateAllAnswers(studentName, answers);
+                    int totalQuestions = AnswerEvaluator.getTotalQuestions();
+                    
+                    String response = "{\"success\":true,\"studentName\":\"" + studentName + 
+                                    "\",\"score\":" + totalScore + 
+                                    ",\"totalQuestions\":" + totalQuestions + 
+                                    ",\"percentage\":" + (totalQuestions > 0 ? (totalScore * 100.0 / totalQuestions) : 0) + "}";
+                    
+                    sendResponse(exchange, 200, response);
+
+                } catch (Exception e) {
+                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid request: " + e.getMessage() + "\"}");
+                }
             } else {
                 exchange.sendResponseHeaders(405, -1);
             }
