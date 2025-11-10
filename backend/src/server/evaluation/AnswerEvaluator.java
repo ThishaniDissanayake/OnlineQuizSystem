@@ -27,11 +27,15 @@ public class AnswerEvaluator {
         Question question = QuestionManager.getQuestionById(questionId);
         
         if (question == null || studentAnswer == null) {
+            System.out.println("✗ Question " + questionId + " not found or answer is null");
             return false;
         }
         
-        // Compare answer (case-insensitive)
-        boolean isCorrect = question.getAnswer().trim().equalsIgnoreCase(studentAnswer.trim());
+        // Get the correct answer from the question
+        String correctAnswer = question.getAnswer();
+        
+        // Compare answer (case-insensitive and trim whitespace)
+        boolean isCorrect = correctAnswer.trim().equalsIgnoreCase(studentAnswer.trim());
         
         // Store result
         studentResults
@@ -43,7 +47,8 @@ public class AnswerEvaluator {
             updateScore(studentName, 1); // 1 mark per correct answer
         }
         
-        System.out.println("✓ Evaluated: " + studentName + " Q" + questionId + " = " + 
+        System.out.println("✓ Evaluated: " + studentName + " Q" + questionId + 
+                         " | Student: '" + studentAnswer + "' | Correct: '" + correctAnswer + "' | " +
                          (isCorrect ? "CORRECT ✓" : "WRONG ✗"));
         
         return isCorrect;
@@ -56,6 +61,10 @@ public class AnswerEvaluator {
      * @return Total score
      */
     public static synchronized int evaluateAllAnswers(String studentName, Map<Integer, String> answers) {
+        // Reset this student's score before evaluating
+        studentScores.put(studentName, 0);
+        studentResults.put(studentName, new HashMap<>());
+        
         int score = 0;
         
         for (Map.Entry<Integer, String> entry : answers.entrySet()) {
