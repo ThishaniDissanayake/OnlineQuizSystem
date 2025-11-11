@@ -11,4 +11,9 @@ export const ENDPOINTS = {
   ADD_QUESTION: `${API_BASE}/api/questions/add`,
   UPDATE_QUESTION: `${API_BASE}/api/questions/update`,
   DELETE_QUESTION: `${API_BASE}/api/questions/delete`,
+  
+  // Member 4 & 5: Evaluation and Results APIs
+  EVALUATE_QUIZ: `${API_BASE}/api/quiz/evaluate`,
+  LEADERBOARD: `${API_BASE}/api/results/leaderboard`,
+  STUDENT_RESULT: `${API_BASE}/api/results/student`,
 };

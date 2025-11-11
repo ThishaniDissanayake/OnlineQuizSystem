@@ -4,6 +4,7 @@ import server.questions.Question;
 import server.questions.QuestionManager;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.reflect.TypeToken;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.*;
@@ -157,14 +158,17 @@ public class AnswerEvaluator {
         for (Question question : questions) {
             int questionId = question.getId();
             String studentAnswer = studentAnswers.get(questionId);
-            String correctAnswer = question.getAnswer();
+            String correctAnswerLetter = question.getAnswer(); // "A", "B", "C", "D"
             
-            // Check if answer is correct (case-insensitive)
+            // Convert letter to actual answer text
+            String correctAnswerText = getAnswerTextFromLetter(question, correctAnswerLetter);
+            
+            // Check if answer is correct (compare with actual text)
             boolean isCorrect = false;
             int marks = 0;
             
-            if (studentAnswer != null && correctAnswer != null) {
-                isCorrect = studentAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
+            if (studentAnswer != null && correctAnswerText != null) {
+                isCorrect = studentAnswer.trim().equalsIgnoreCase(correctAnswerText.trim());
                 marks = isCorrect ? 1 : 0;
             }
             
@@ -174,12 +178,12 @@ public class AnswerEvaluator {
                 wrongCount++;
             }
             
-            // Store question result
+            // Store question result with actual answer text for display
             QuestionResult qResult = new QuestionResult(
                 questionId,
                 question.getQuestion(),
                 studentAnswer != null ? studentAnswer : "No Answer",
-                correctAnswer,
+                correctAnswerText != null ? correctAnswerText : correctAnswerLetter,
                 isCorrect,
                 marks
             );
@@ -265,5 +269,28 @@ public class AnswerEvaluator {
      */
     public static int getTotalStudents() {
         return studentResults.size();
+    }
+    
+    /**
+     * Helper method to convert answer letter (A, B, C, D) to actual text
+     */
+    private static String getAnswerTextFromLetter(Question question, String letter) {
+        if (letter == null || letter.isEmpty()) {
+            return null;
+        }
+        
+        List<String> options = question.getOptions();
+        if (options == null || options.isEmpty()) {
+            return null;
+        }
+        
+        // Convert letter to index (A=0, B=1, C=2, D=3)
+        int index = letter.toUpperCase().charAt(0) - 'A';
+        
+        if (index >= 0 && index < options.size()) {
+            return options.get(index);
+        }
+        
+        return null;
     }
 }
