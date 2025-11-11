@@ -161,6 +161,7 @@
     </p>
 
     <div>
+      <button id="view-evaluation-btn">View Answer Evaluation</button>
       <button id="view-results-btn">View Leaderboard</button>
       <button id="close-quiz-btn" class="secondary">Return to Home</button>
     </div>
@@ -261,6 +262,16 @@ import { API_ENDPOINTS } from '../js/api/endpoints.js';
         `${evaluation.score} / ${evaluation.totalQuestions}`;
       document.getElementById('percentage-display').textContent = 
         `${evaluation.percentage.toFixed(1)}%`;
+      
+      // Store evaluation data for the evaluation page - include answers and detailed results
+      sessionStorage.setItem('evaluation_data', JSON.stringify({
+        studentName: data.studentName,
+        answers: data.answers,
+        score: evaluation.score,
+        totalQuestions: evaluation.totalQuestions,
+        percentage: evaluation.percentage,
+        detailedResults: evaluation.detailedResults || {}
+      }));
     } else {
       document.getElementById('score-display').textContent = 'Evaluating...';
       document.getElementById('percentage-display').textContent = 
@@ -275,6 +286,10 @@ import { API_ENDPOINTS } from '../js/api/endpoints.js';
   }
 
   // Event listeners
+  document.getElementById('view-evaluation-btn')?.addEventListener('click', () => {
+    window.location.href = 'evaluation.html';
+  });
+
   document.getElementById('view-results-btn')?.addEventListener('click', () => {
     window.location.href = 'results.html?source=student';
   });

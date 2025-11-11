@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Answer Evaluation</title>
+<style>
+  body { 
+    font-family: sans-serif; 
+    background: #f3f4f6; 
+    margin: 0;
+    padding: 20px;
+  }
+  .container { 
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff; 
+    padding: 40px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+  }
+  h1 { 
+    color: #1f2937; 
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .student-info {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    color: white;
+  }
+  .student-name {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .score-info {
+    font-size: 1.2em;
+  }
+  .question-card {
+    margin-bottom: 30px;
+    padding: 25px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  .question-number {
+    font-weight: bold;
+    color: #2563eb;
+    font-size: 1.1em;
+  }
+  .question-status {
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9em;
+  }
+  .status-correct {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  .status-incorrect {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .status-unanswered {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .question-text {
+    font-size: 1.1em;
+    margin-bottom: 20px;
+    color: #1f2937;
+    font-weight: 500;
+  }
+  .answer-section {
+    margin-top: 15px;
+  }
+  .answer-label {
+    font-weight: bold;
+    color: #4b5563;
+    margin-bottom: 10px;
+    display: block;
+    font-size: 0.95em;
+  }
+  .options-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .option-item {
+    padding: 12px 15px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border: 2px solid #e5e7eb;
+    background: #f9fafb;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .option-item.student-answer {
+    background: #dbeafe;
+    border-color: #2563eb;
+    border-width: 2px;
+  }
+  .option-item.student-answer.correct {
+    background: #d1fae5;
+    border-color: #059669;
+  }
+  .option-item.student-answer.incorrect {
+    background: #fee2e2;
+    border-color: #dc2626;
+  }
+  .option-item.correct-answer {
+    background: #d1fae5;
+    border-color: #059669;
+    border-width: 2px;
+  }
+  .option-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-left: 10px;
+  }
+  .badge-your-answer {
+    background: #2563eb;
+    color: white;
+  }
+  .badge-correct {
+    background: #059669;
+    color: white;
+  }
+  .badge-wrong {
+    background: #dc2626;
+    color: white;
+  }
+  .no-answer-notice {
+    padding: 15px;
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+    margin-top: 10px;
+    color: #92400e;
+  }
+  .button-container {
+    text-align: center;
+    margin-top: 30px;
+  }
+  button { 
+    padding: 12px 30px; 
+    background: #2563eb; 
+    color: #fff; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 1em;
+    transition: background 0.3s;
+    margin: 0 10px;
+  }
+  button:hover {
+    background: #1d4ed8;
+  }
+  button.secondary {
+    background: #6b7280;
+  }
+  button.secondary:hover {
+    background: #4b5563;
+  }
+  .loading {
+    text-align: center;
+    padding: 50px;
+    color: #6b7280;
+  }
+  .loading-spinner {
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #2563eb;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .error {
+    text-align: center;
+    padding: 50px;
+    color: #dc2626;
+  }
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+  .stat-card {
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.9em;
+    color: #6b7280;
+    margin-bottom: 5px;
+  }
+  .stat-value {
+    font-size: 2em;
+    font-weight: bold;
+    color: #1f2937;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="loading-section" class="loading">
+    <div class="loading-spinner"></div>
+    <p>Loading evaluation results...</p>
+  </div>
+
+  <div id="error-section" class="error" style="display: none;">
+    <h2>Error</h2>
+    <p id="error-message"></p>
+    <button onclick="window.location.href='student.html'">Back to Quiz</button>
+  </div>
+
+  <div id="content-section" style="display: none;">
+    <h1>📝 Answer Evaluation</h1>
+    
+    <div class="student-info">
+      <div class="student-name" id="student-name"></div>
+      <div class="score-info" id="score-info"></div>
+    </div>
+
+    <div class="summary-stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Questions</div>
+        <div class="stat-value" id="total-questions">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Correct Answers</div>
+        <div class="stat-value" style="color: #059669;" id="correct-answers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Incorrect Answers</div>
+        <div class="stat-value" style="color: #dc2626;" id="incorrect-answers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unanswered</div>
+        <div class="stat-value" style="color: #d97706;" id="unanswered">0</div>
+      </div>
+    </div>
+
+    <div id="questions-container"></div>
+
+    <div class="button-container">
+      <button onclick="window.location.href='results.html?source=student'">View Leaderboard</button>
+      <button class="secondary" onclick="window.location.href='student.html'">Take Another Quiz</button>
+      <button class="secondary" onclick="window.location.href='../index.html'">Return to Home</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { API_ENDPOINTS } from '../js/api/endpoints.js';
+
+(async function() {
+  'use strict';
+  
+  // Get evaluation data from sessionStorage
+  const evaluationDataStr = sessionStorage.getItem('evaluation_data');
+  
+  if (!evaluationDataStr) {
+    showError('No evaluation data found. Please submit the quiz first.');
+    return;
+  }
+
+  try {
+    const evaluationData = JSON.parse(evaluationDataStr);
+    console.log('📊 Evaluation data:', evaluationData);
+    
+    // Fetch questions to display with answers
+    await loadQuestionsAndDisplay(evaluationData);
+    
+  } catch (e) {
+    console.error('❌ Error:', e);
+    showError('Failed to load evaluation: ' + e.message);
+  }
+
+  async function loadQuestionsAndDisplay(evaluationData) {
+    try {
+      // Fetch all questions (which include correct answers)
+      const response = await fetch(API_ENDPOINTS.GET_QUESTIONS);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch questions: ${response.status}`);
+      }
+
+      const questions = await response.json();
+      console.log('📝 Questions loaded:', questions);
+      
+      displayEvaluation(evaluationData, questions);
+      
+    } catch (error) {
+      console.error('❌ Error loading questions:', error);
+      showError('Failed to load questions: ' + error.message);
+    }
+  }
+
+  function displayEvaluation(evaluationData, questions) {
+    document.getElementById('loading-section').style.display = 'none';
+    document.getElementById('content-section').style.display = 'block';
+
+    // Display student info
+    document.getElementById('student-name').textContent = evaluationData.studentName;
+    document.getElementById('score-info').textContent = 
+      `Score: ${evaluationData.score} / ${evaluationData.totalQuestions} (${evaluationData.percentage.toFixed(1)}%)`;
+
+    // Calculate statistics
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let unansweredCount = 0;
+
+    const studentAnswers = evaluationData.answers;
+    const detailedResults = evaluationData.detailedResults || {};
+    const questionsContainer = document.getElementById('questions-container');
+    
+    questions.forEach((question, index) => {
+      const questionId = question.id;
+      const studentAnswer = studentAnswers[questionId];
+      const correctAnswer = question.answer;
+      
+      // Check if answer is correct using detailedResults or fallback to comparison
+      const isCorrect = detailedResults[questionId] === true || 
+                       (studentAnswer && studentAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase());
+      const isAnswered = studentAnswer !== undefined && studentAnswer !== null && studentAnswer !== '';
+      
+      if (!isAnswered) {
+        unansweredCount++;
+      } else if (isCorrect) {
+        correctCount++;
+      } else {
+        incorrectCount++;
+      }
+
+      // Create question card
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      
+      let statusClass, statusText;
+      if (!isAnswered) {
+        statusClass = 'status-unanswered';
+        statusText = 'Not Answered';
+      } else if (isCorrect) {
+        statusClass = 'status-correct';
+        statusText = '✓ Correct';
+      } else {
+        statusClass = 'status-incorrect';
+        statusText = '✗ Incorrect';
+      }
+
+      // Build options HTML
+      let optionsHtml = '';
+      if (question.options && question.options.length > 0) {
+        optionsHtml = '<ul class="options-list">';
+        question.options.forEach(option => {
+          const isStudentAnswer = studentAnswer === option;
+          const isCorrectOption = correctAnswer === option;
+          
+          let optionClass = 'option-item';
+          let badgeHtml = '';
+          
+          if (isStudentAnswer && isCorrectOption) {
+            // Student selected correct answer
+            optionClass += ' student-answer correct';
+            badgeHtml = '<span class="option-badge badge-correct">✓ Your Answer - Correct!</span>';
+          } else if (isStudentAnswer && !isCorrectOption) {
+            // Student selected wrong answer
+            optionClass += ' student-answer incorrect';
+            badgeHtml = '<span class="option-badge badge-wrong">✗ Your Answer</span>';
+          } else if (!isStudentAnswer && isCorrectOption) {
+            // This is the correct answer but student didn't select it
+            optionClass += ' correct-answer';
+            badgeHtml = '<span class="option-badge badge-correct">✓ Correct Answer</span>';
+          }
+          
+          optionsHtml += `<li class="${optionClass}">${option}${badgeHtml}</li>`;
+        });
+        optionsHtml += '</ul>';
+      } else {
+        // No options available (text answer)
+        optionsHtml = `
+          <div class="answer-section">
+            <label class="answer-label">Your Answer:</label>
+            <div class="option-item student-answer ${isCorrect ? 'correct' : 'incorrect'}">
+              ${isAnswered ? studentAnswer : 'No answer provided'}
+              ${isCorrect ? '<span class="option-badge badge-correct">✓ Correct</span>' : '<span class="option-badge badge-wrong">✗ Wrong</span>'}
+            </div>
+            ${!isCorrect ? `
+              <label class="answer-label">Correct Answer:</label>
+              <div class="option-item correct-answer">
+                ${correctAnswer}
+                <span class="option-badge badge-correct">✓ Correct Answer</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      // Add no answer notice if applicable
+      const noAnswerNotice = !isAnswered ? 
+        '<div class="no-answer-notice">⚠️ You did not answer this question</div>' : '';
+
+      card.innerHTML = `
+        <div class="question-header">
+          <span class="question-number">Question ${index + 1}</span>
+          <span class="question-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="question-text">${question.question || question.text || 'No question text'}</div>
+        <div class="answer-section">
+          <label class="answer-label">Answer Options:</label>
+          ${optionsHtml}
+          ${noAnswerNotice}
+        </div>
+      `;
+      
+      questionsContainer.appendChild(card);
+    });
+
+    // Update statistics
+    document.getElementById('total-questions').textContent = questions.length;
+    document.getElementById('correct-answers').textContent = correctCount;
+    document.getElementById('incorrect-answers').textContent = incorrectCount;
+    document.getElementById('unanswered').textContent = unansweredCount;
+  }
+
+  function showError(message) {
+    document.getElementById('loading-section').style.display = 'none';
+    document.getElementById('error-section').style.display = 'block';
+    document.getElementById('error-message').textContent = message;
+  }
+})();
+</script>
+</body>
+</html>

@@ -545,11 +545,17 @@ public class HttpServer {
                     // Evaluate all answers
                     int totalScore = AnswerEvaluator.evaluateAllAnswers(studentName, answers);
                     int totalQuestions = AnswerEvaluator.getTotalQuestions();
+                    java.util.Map<Integer, Boolean> detailedResults = AnswerEvaluator.getStudentResults(studentName);
+                    
+                    // Build detailed results JSON
+                    Gson gson = new Gson();
+                    String detailedResultsJson = gson.toJson(detailedResults);
                     
                     String response = "{\"success\":true,\"studentName\":\"" + studentName + 
                                     "\",\"score\":" + totalScore + 
                                     ",\"totalQuestions\":" + totalQuestions + 
-                                    ",\"percentage\":" + (totalQuestions > 0 ? (totalScore * 100.0 / totalQuestions) : 0) + "}";
+                                    ",\"percentage\":" + (totalQuestions > 0 ? (totalScore * 100.0 / totalQuestions) : 0) + 
+                                    ",\"detailedResults\":" + detailedResultsJson + "}";
                     
                     sendResponse(exchange, 200, response);
 

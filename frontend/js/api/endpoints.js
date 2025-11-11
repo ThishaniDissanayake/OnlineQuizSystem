@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   RESULTS: `${API_BASE}/api/results`,
   STUDENT_RESULT: (studentName) => `${API_BASE}/api/results/student?name=${encodeURIComponent(studentName)}`,
   EVALUATE: `${API_BASE}/api/evaluate`,
+  GET_QUESTIONS: `${API_BASE}/api/questions`,
 };
 
 // Keep backward compatibility
