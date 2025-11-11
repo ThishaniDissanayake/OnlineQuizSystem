@@ -78,6 +78,8 @@
   <p style="font-size: 0.9em; color: #6b7280; margin-top: 20px;">
     Thank you for completing the quiz!
   </p>
+  <button id="view-results-btn" style="margin-right: 10px;">📊 View Results</button>
+  <button id="view-leaderboard-btn">🏆 View Leaderboard</button>
   <button id="close-quiz-btn">Return to Home</button>
   
   <!-- Debug info (can be removed in production) -->
@@ -160,6 +162,21 @@
     debugInfo.innerHTML += `<br><span class="error">Error: ${message}</span>`;
   }
   
+  // Store student name for results page
+  let currentStudentName = null;
+  
+  document.getElementById('view-results-btn').onclick = () => {
+    if (currentStudentName) {
+      window.location.href = `result.html?student=${encodeURIComponent(currentStudentName)}`;
+    } else {
+      alert('Student name not available. Please wait for results to be evaluated.');
+    }
+  };
+  
+  document.getElementById('view-leaderboard-btn').onclick = () => {
+    window.location.href = 'leaderboard.html';
+  };
+  
   document.getElementById('close-quiz-btn').onclick = () => {
     console.log('🏠 Returning to home page');
     
@@ -174,6 +191,21 @@
     
     window.location.href = "../index.html";
   };
+  
+  // Update currentStudentName when data is loaded
+  if (windowId) {
+    const storageKey = `quiz_${windowId}`;
+    const dataStr = sessionStorage.getItem(storageKey);
+    if (dataStr) {
+      try {
+        const data = JSON.parse(dataStr);
+        currentStudentName = data.studentName;
+        sessionStorage.setItem('studentName', currentStudentName);
+      } catch (e) {
+        console.error('Error storing student name:', e);
+      }
+    }
+  }
 })();
 </script>
 </body>

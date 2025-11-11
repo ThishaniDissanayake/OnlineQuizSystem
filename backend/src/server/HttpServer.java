@@ -3,6 +3,8 @@ package server;
 import com.sun.net.httpserver.*;
 import server.questions.QuestionManager;
 import server.questions.Question;
+import server.evaluation.AnswerEvaluator;
+import server.results.ResultDistributor;
 import com.google.gson.Gson;
 
 import java.io.*;
@@ -29,6 +31,9 @@ public class HttpServer {
         server.createContext("/api/questions/delete", new DeleteQuestionHandler());
         server.createContext("/api/students", new StudentsHandler());
         server.createContext("/api/quiz/start", new StartQuizHandler());
+        server.createContext("/api/quiz/evaluate", new EvaluateQuizHandler());
+        server.createContext("/api/results/leaderboard", new LeaderboardHandler());
+        server.createContext("/api/results/student", new StudentResultHandler());
         server.createContext("/api/status", new StatusHandler());
         
         // --- Static File Serving (catch-all, lowest priority) ---
@@ -65,20 +70,16 @@ public class HttpServer {
                 requestPath = "/index.html";
             }
             
-            System.out.println("📄 Static request: " + requestPath);
-            System.out.println("   Current directory: " + new File(".").getAbsolutePath());
-            
-            // Try multiple possible locations
+            // Resolve static file paths (minimal logging to keep terminal clean)
             File file = null;
             String[] possiblePaths = {
                 ".." + File.separator + "frontend" + requestPath,  // Go up one level to find frontend
                 "frontend" + requestPath,
                 "." + requestPath
             };
-            
+
             for (String path : possiblePaths) {
                 File testFile = new File(path);
-                System.out.println("   Trying: " + testFile.getAbsolutePath() + " - Exists: " + testFile.exists());
                 if (testFile.exists() && !testFile.isDirectory()) {
                     file = testFile;
                     break;
@@ -100,7 +101,7 @@ public class HttpServer {
             // Determine content type
             String contentType = getContentType(requestPath);
             
-            System.out.println("   ✅ Serving: " + file.getAbsolutePath() + " (" + contentType + ")");
+            System.out.println("✅ Serving: " + file.getAbsolutePath() + " (" + contentType + ")");
             
             byte[] fileBytes = Files.readAllBytes(file.toPath());
             
@@ -170,11 +171,11 @@ public class HttpServer {
             }
 
             if ("POST".equals(exchange.getRequestMethod())) {
-                try {
-                    InputStream is = exchange.getRequestBody();
-                    String body = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-                        .lines()
-                        .collect(Collectors.joining("\n"));
+                try (InputStream is = exchange.getRequestBody();
+                     InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
+                     BufferedReader reader = new BufferedReader(isr)) {
+                    
+                    String body = reader.lines().collect(Collectors.joining("\n"));
 
                     Question question = new Gson().fromJson(body, Question.class);
                     
@@ -230,10 +231,12 @@ public class HttpServer {
                     }
                     int id = Integer.parseInt(query.substring(3));
 
-                    InputStream is = exchange.getRequestBody();
-                    String body = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-                        .lines()
-                        .collect(Collectors.joining("\n"));
+                    String body;
+                    try (InputStream is = exchange.getRequestBody();
+                         InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
+                         BufferedReader reader = new BufferedReader(isr)) {
+                        body = reader.lines().collect(Collectors.joining("\n"));
+                    }
 
                     Question question = new Gson().fromJson(body, Question.class);
 
@@ -419,6 +422,117 @@ public class HttpServer {
                 OutputStream os = exchange.getResponseBody();
                 os.write(response.getBytes());
                 os.close();
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+    
+    // --- POST /api/quiz/evaluate - Evaluate all answers (Member 4) ---
+    static class EvaluateQuizHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    // Evaluate all student answers (Member 4)
+                    AnswerEvaluator.evaluateAllStudents();
+                    // Distribute results to all students (Member 5)
+                    ResultDistributor.distributeResults();
+                    
+                    String response = "{\"success\":true,\"message\":\"Quiz evaluated and results distributed\"}";
+                    sendResponse(exchange, 200, response);
+                } catch (Exception e) {
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Evaluation failed: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+    
+    // --- GET /api/results/leaderboard - Get leaderboard (Member 5) ---
+    static class LeaderboardHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("GET".equals(exchange.getRequestMethod())) {
+                try {
+                    List<AnswerEvaluator.StudentResult> leaderboard = AnswerEvaluator.getLeaderboard();
+                    
+                    String jsonResponse = new Gson().toJson(leaderboard);
+                    byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                    
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length);
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(response);
+                    os.close();
+                } catch (Exception e) {
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Failed to get leaderboard: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+    
+    // --- GET /api/results/student?name=X - Get specific student result (Member 4) ---
+    static class StudentResultHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("GET".equals(exchange.getRequestMethod())) {
+                try {
+                    String query = exchange.getRequestURI().getQuery();
+                    if (query == null || !query.startsWith("name=")) {
+                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Student name is required\"}");
+                        return;
+                    }
+                    
+                    String studentName = java.net.URLDecoder.decode(query.substring(5), "UTF-8");
+                    AnswerEvaluator.StudentResult result = AnswerEvaluator.getStudentResult(studentName);
+                    
+                    if (result == null) {
+                        sendResponse(exchange, 404, "{\"success\":false,\"message\":\"Student result not found\"}");
+                        return;
+                    }
+                    
+                    String jsonResponse = new Gson().toJson(result);
+                    byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                    
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length);
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(response);
+                    os.close();
+                } catch (Exception e) {
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Failed to get result: " + e.getMessage() + "\"}");
+                }
             } else {
                 exchange.sendResponseHeaders(405, -1);
             }
