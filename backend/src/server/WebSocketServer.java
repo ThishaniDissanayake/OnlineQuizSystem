@@ -157,5 +157,49 @@ public class WebSocketServer implements Runnable {
         webSocketClients.remove(client);
         System.out.println("🔌 WebSocket client removed: " + client.getStudentName());
         System.out.println("📊 Remaining WebSocket clients: " + webSocketClients.size());
+        broadcastStudentUpdate();
+    }
+
+    public static void broadcastStudentUpdate() {
+        synchronized (webSocketClients) {
+            for (WebSocketClient client : webSocketClients) {
+                String clientName = client.getStudentName();
+                if (clientName != null && clientName.equals("LeaderboardViewer")) {
+                    String message = "STUDENT_UPDATE|" + getConnectedStudentsJson();
+                    client.sendMessage(message);
+                }
+            }
+        }
+    }
+
+    public static void broadcastScoreUpdate(String studentName, int score, int totalQuestions) {
+        double percentage = totalQuestions > 0 ? (score * 100.0 / totalQuestions) : 0;
+        String scoreData = "{\"studentName\":\"" + studentName + "\",\"score\":" + score + ",\"totalQuestions\":" + totalQuestions + ",\"percentage\":" + percentage + "}";
+        
+        synchronized (webSocketClients) {
+            for (WebSocketClient client : webSocketClients) {
+                String clientName = client.getStudentName();
+                if (clientName != null && clientName.equals("LeaderboardViewer")) {
+                    client.sendMessage("SCORE|" + scoreData);
+                }
+            }
+        }
+    }
+
+    private static String getConnectedStudentsJson() {
+        StringBuilder json = new StringBuilder("[");
+        boolean first = true;
+        
+        for (WebSocketClient client : webSocketClients) {
+            String clientName = client.getStudentName();
+            if (clientName != null && !clientName.equals("LeaderboardViewer")) {
+                if (!first) json.append(",");
+                json.append("{\"name\":\"").append(clientName).append("\",\"connected\":true}");
+                first = false;
+            }
+        }
+        
+        json.append("]");
+        return json.toString();
     }
 }

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Leaderboard - Quiz System</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        .leaderboard-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .status-live {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-offline {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .leaderboard-table {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .leaderboard {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .leaderboard td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .leaderboard tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .rank {
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: center;
+        }
+
+        .rank-1 { color: #FFD700; }
+        .rank-2 { color: #C0C0C0; }
+        .rank-3 { color: #CD7F32; }
+
+        .student-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .score {
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 15px;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .percentage {
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            width: 100px;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 0 10px;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+
+        .new-entry {
+            animation: highlight 2s ease-in-out;
+        }
+
+        @keyframes highlight {
+            0% { background-color: #fff3cd; }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <div class="leaderboard-container">
+        <div class="header">
+            <h1>🏆 Live Leaderboard</h1>
+            <div id="statusIndicator" class="status-indicator status-offline">
+                🔴 Connecting...
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="refreshBtn" class="btn" onclick="refreshLeaderboard()">🔄 Refresh</button>
+            <button id="connectBtn" class="btn" onclick="connectWebSocket()">🔌 Connect</button>
+        </div>
+
+        <div class="leaderboard-table">
+            <div class="table-header">
+                <h2>📊 Current Rankings</h2>
+            </div>
+
+            <div id="loadingSection" class="loading">
+                <p>⏳ Loading leaderboard...</p>
+            </div>
+
+            <div id="emptySection" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📭</div>
+                <h3>No Results Yet</h3>
+                <p>Waiting for students to complete the quiz...</p>
+            </div>
+
+            <div id="leaderboardSection" style="display: none;">
+                <table class="leaderboard">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;">Rank</th>
+                            <th>Student Name</th>
+                            <th>Score</th>
+                            <th>Percentage</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="timestamp" id="timestampSection"></div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="admin.html" style="color: #667eea; text-decoration: none;">← Back to Admin Dashboard</a>
+        </div>
+    </div>
+
+    <script type="module" src="../js/leaderboard/leaderboard-app.js"></script>
+</body>
+</html>

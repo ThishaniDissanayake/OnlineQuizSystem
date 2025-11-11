@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Leaderboard Flow</title>
+</head>
+<body>
+    <h1>Leaderboard Flow Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+    
+    <script>
+        const ws = new WebSocket('ws://localhost:8081');
+        const status = document.getElementById('status');
+        const messages = document.getElementById('messages');
+        
+        ws.onopen = () => {
+            status.textContent = 'Connected';
+            ws.send('TestStudent1');
+            
+            setTimeout(() => {
+                ws.send('ANSWER|1|A');
+            }, 2000);
+            
+            setTimeout(() => {
+                ws.send('ANSWER|2|B');
+            }, 4000);
+        };
+        
+        ws.onmessage = (event) => {
+            messages.innerHTML += '<div>' + event.data + '</div>';
+        };
+        
+        ws.onclose = () => {
+            status.textContent = 'Disconnected';
+        };
+        
+        ws.onerror = (error) => {
+            status.textContent = 'Error: ' + error;
+        };
+    </script>
+</body>
+</html>

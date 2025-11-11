@@ -59,6 +59,7 @@ public class WebSocketClient implements Runnable {
             studentName = message.trim();
             System.out.println("👤 [" + clientId + "] NEW STUDENT REGISTERED: " + studentName);
             sendMessage("Welcome, " + studentName + "! Please wait for the quiz to start...");
+            WebSocketServer.broadcastStudentUpdate();
         } 
         else if (message.startsWith("ANSWER|")) {
             String[] parts = message.split("\\|");
@@ -67,6 +68,14 @@ public class WebSocketClient implements Runnable {
                 String answer = parts[2];
                 AnswerManager.recordAnswer(studentName, questionId, answer);
                 System.out.println("📝 [" + clientId + "] Answer saved: " + studentName + " Q" + questionId + " → " + answer);
+                
+                try {
+                    int currentScore = server.evaluation.AnswerEvaluator.getTotalMarks(studentName);
+                    int totalQuestions = server.evaluation.AnswerEvaluator.getTotalQuestions();
+                    WebSocketServer.broadcastScoreUpdate(studentName, currentScore, totalQuestions);
+                } catch (Exception e) {
+                    System.err.println("Error broadcasting score update: " + e.getMessage());
+                }
             }
         } 
         else if (message.equals("SUBMIT_COMPLETE")) {

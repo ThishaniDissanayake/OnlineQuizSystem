@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        .connecting { background: #fff3cd; color: #856404; }
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    <div id="status" class="status connecting">Connecting...</div>
+    <button onclick="connect()">Connect</button>
+    <button onclick="sendTest()">Send Test Message</button>
+    <div id="messages"></div>
+    
+    <script>
+        let ws = null;
+        const status = document.getElementById('status');
+        const messages = document.getElementById('messages');
+        
+        function log(message) {
+            messages.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('Already connected');
+                return;
+            }
+            
+            log('Attempting to connect to ws://localhost:8081');
+            ws = new WebSocket('ws://localhost:8081');
+            
+            ws.onopen = () => {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+                log('✅ Connected successfully');
+                ws.send('TestClient');
+                log('📤 Sent: TestClient');
+            };
+            
+            ws.onmessage = (event) => {
+                log('📨 Received: ' + event.data);
+            };
+            
+            ws.onclose = (event) => {
+                status.textContent = 'Disconnected (Code: ' + event.code + ')';
+                status.className = 'status disconnected';
+                log('❌ Disconnected. Code: ' + event.code + ', Reason: ' + event.reason);
+            };
+            
+            ws.onerror = (error) => {
+                status.textContent = 'Error';
+                status.className = 'status disconnected';
+                log('❌ Error: ' + error);
+            };
+        }
+        
+        function sendTest() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('ANSWER|1|A');
+                log('📤 Sent test answer: ANSWER|1|A');
+            } else {
+                log('❌ Not connected');
+            }
+        }
+        
+        // Auto-connect on load
+        connect();
+    </script>
+</body>
+</html>
