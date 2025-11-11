@@ -46,7 +46,7 @@ public class HttpServer {
         System.out.println("✅ HTTP API Server started on port " + HTTP_PORT);
         System.out.println("📄 Serving static files from: ./frontend/");
         System.out.println("🎓 Student Portal: http://localhost:8080/pages/student.html");
-        System.out.println("📊 Admin Portal: http://localhost:8080/admin/dashboard.html");
+        System.out.println("📊 Admin Portal: http://localhost:8080/pages/admin.html");
     }
 
     public void stop() {
