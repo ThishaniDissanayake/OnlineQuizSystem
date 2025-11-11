@@ -98,4 +98,64 @@ public class QuizServer {
 
         System.out.println("✅ Questions broadcast complete!");
     }
+
+    /**
+     * Broadcast individual scores to all connected clients (TCP & WebSocket)
+     */
+    public static void broadcastScores() {
+        System.out.println("\n📊 Broadcasting individual scores to all clients...");
+        
+        // Import and use ScoreDistributor
+        try {
+            server.results.ScoreDistributor.distributeScoredToAllClients();
+        } catch (Exception e) {
+            System.err.println("❌ Error broadcasting scores: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Broadcast final leaderboard to all connected clients (TCP & WebSocket)
+     */
+    public static void broadcastLeaderboard() {
+        System.out.println("\n🏆 Broadcasting final leaderboard to all clients...");
+        
+        // Import and use ScoreDistributor
+        try {
+            server.results.ScoreDistributor.broadcastFinalLeaderboard();
+        } catch (Exception e) {
+            System.err.println("❌ Error broadcasting leaderboard: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Distribute all results: scores + leaderboard (blocking)
+     */
+    public static void distributeAllResults() {
+        System.out.println("\n" + "🎯".repeat(20));
+        System.out.println("QUIZ COMPLETE - DISTRIBUTING RESULTS");
+        System.out.println("🎯".repeat(20));
+        
+        try {
+            server.results.ScoreDistributor.distributeAllResults();
+        } catch (Exception e) {
+            System.err.println("❌ Error distributing results: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Distribute all results asynchronously (non-blocking)
+     * Returns a CompletableFuture that completes when distribution is done
+     */
+    public static java.util.concurrent.CompletableFuture<Void> distributeAllResultsAsync() {
+        System.out.println("\n" + "🚀".repeat(20));
+        System.out.println("QUIZ COMPLETE - ASYNC RESULT DISTRIBUTION");
+        System.out.println("🚀".repeat(20));
+        
+        try {
+            return server.results.ResultBroadcaster.distributeResultsAsync();
+        } catch (Exception e) {
+            System.err.println("❌ Error in async distribution: " + e.getMessage());
+            return java.util.concurrent.CompletableFuture.failedFuture(e);
+        }
+    }
 }

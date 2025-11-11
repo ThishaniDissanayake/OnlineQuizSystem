@@ -38,6 +38,11 @@ public class HttpServer {
         server.createContext("/api/results/student", new StudentResultHandler());
         server.createContext("/api/evaluate", new EvaluateAnswersHandler());
         
+        // --- Member 4: Score Distribution & Broadcasting API Routes ---
+        server.createContext("/api/broadcast/scores", new BroadcastScoresHandler());
+        server.createContext("/api/broadcast/leaderboard", new BroadcastLeaderboardHandler());
+        server.createContext("/api/broadcast/results", new BroadcastAllResultsHandler());
+        
         // --- Static File Serving (catch-all, lowest priority) ---
         server.createContext("/", new StaticFileHandler());
         
@@ -561,6 +566,113 @@ public class HttpServer {
 
                 } catch (Exception e) {
                     sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid request: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    // --- Member 4: POST /api/broadcast/scores - Broadcast individual scores ---
+    static class BroadcastScoresHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    System.out.println("📊 API: Broadcasting individual scores to all clients...");
+                    QuizServer.broadcastScores();
+                    
+                    String response = "{\"success\":true,\"message\":\"Scores broadcast to all clients\"}";
+                    sendResponse(exchange, 200, response);
+                } catch (Exception e) {
+                    System.err.println("❌ Error broadcasting scores: " + e.getMessage());
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Error: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    // --- Member 4: POST /api/broadcast/leaderboard - Broadcast final leaderboard ---
+    static class BroadcastLeaderboardHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    System.out.println("🏆 API: Broadcasting final leaderboard to all clients...");
+                    QuizServer.broadcastLeaderboard();
+                    
+                    String response = "{\"success\":true,\"message\":\"Leaderboard broadcast to all clients\"}";
+                    sendResponse(exchange, 200, response);
+                } catch (Exception e) {
+                    System.err.println("❌ Error broadcasting leaderboard: " + e.getMessage());
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Error: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+    // --- Member 4: POST /api/broadcast/results - Distribute all results (scores + leaderboard) ---
+    static class BroadcastAllResultsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String query = exchange.getRequestURI().getQuery();
+                    boolean useAsync = query != null && query.contains("async=true");
+                    
+                    if (useAsync) {
+                        System.out.println("🚀 API: Starting ASYNC result distribution...");
+                        QuizServer.distributeAllResultsAsync()
+                            .thenRun(() -> System.out.println("✅ Async distribution completed"))
+                            .exceptionally(ex -> {
+                                System.err.println("❌ Async distribution error: " + ex.getMessage());
+                                return null;
+                            });
+                        
+                        String response = "{\"success\":true,\"message\":\"Async result distribution started\",\"mode\":\"async\"}";
+                        sendResponse(exchange, 200, response);
+                    } else {
+                        System.out.println("📢 API: Starting result distribution (blocking)...");
+                        QuizServer.distributeAllResults();
+                        
+                        String response = "{\"success\":true,\"message\":\"Results distributed to all clients\",\"mode\":\"sync\"}";
+                        sendResponse(exchange, 200, response);
+                    }
+                    
+                } catch (Exception e) {
+                    System.err.println("❌ Error distributing results: " + e.getMessage());
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Error: " + e.getMessage() + "\"}");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
