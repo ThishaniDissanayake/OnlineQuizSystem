@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Results - Result Board</title>
+    <link rel="stylesheet" href="../styles/admin.css">
+    <style>
+        .results-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #2c3e50;
+        }
+
+        .page-header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .leaderboard {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .leaderboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .leaderboard-header h2 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table thead {
+            background: #f8f9fa;
+        }
+
+        .results-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .results-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .results-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .rank {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .rank-1 { color: #FFD700; } /* Gold */
+        .rank-2 { color: #C0C0C0; } /* Silver */
+        .rank-3 { color: #CD7F32; } /* Bronze */
+
+        .medal {
+            font-size: 1.5em;
+            margin-right: 5px;
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .score-excellent { background: #e8f5e9; color: #2e7d32; }
+        .score-good { background: #fff3e0; color: #f57c00; }
+        .score-average { background: #fce4ec; color: #c2185b; }
+
+        .percentage-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .percentage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-results-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 20px auto;
+            display: block;
+            transition: transform 0.2s;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+
+        .student-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="results-container">
+        <div class="page-header">
+            <h1>🏆 Quiz Results - Leaderboard</h1>
+            <p>Final scores and rankings for all students</p>
+        </div>
+
+        <div id="statsSection" class="stats-cards" style="display: none;">
+            <div class="stat-card">
+                <h3>Total Students</h3>
+                <div class="value" id="totalStudents">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Questions</h3>
+                <div class="value" id="totalQuestions">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Average Score</h3>
+                <div class="value" id="averageScore">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>Highest Score</h3>
+                <div class="value" id="highestScore">0</div>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <div class="leaderboard-header">
+                <h2>📊 Leaderboard</h2>
+            </div>
+            
+            <div id="loadingSection" class="loading">
+                <p>⏳ Loading results...</p>
+            </div>
+
+            <div id="noResultsSection" class="no-results" style="display: none;">
+                <div class="no-results-icon">📭</div>
+                <h3>No Results Yet</h3>
+                <p>No students have completed the quiz yet.</p>
+            </div>
+
+            <div id="resultsTableSection" style="display: none;">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student Name</th>
+                            <th>Score</th>
+                            <th>Percentage</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                        <!-- Results will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="loadResults()">🔄 Refresh Results</button>
+
+        <div class="timestamp" id="timestampSection"></div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="#" id="backLink" style="color: #667eea; text-decoration: none;">← Back</a>
+        </div>
+    </div>
+
+    <script type="module" src="../js/results/results-app.js"></script>
+    <script>
+        // Determine where to navigate back to
+        window.addEventListener('DOMContentLoaded', () => {
+            const backLink = document.getElementById('backLink');
+            const urlParams = new URLSearchParams(window.location.search);
+            const source = urlParams.get('source');
+            
+            // Check if coming from student submission page
+            if (source === 'student' || document.referrer.includes('submission.html') || document.referrer.includes('student.html')) {
+                backLink.href = '../index.html';
+                backLink.textContent = '← Back to Home';
+            } else {
+                backLink.href = 'admin.html';
+                backLink.textContent = '← Back to Admin Dashboard';
+            }
+        });
+    </script>
+</body>
+</html>

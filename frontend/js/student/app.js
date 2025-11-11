@@ -286,6 +286,7 @@
     const data = {
       windowId: WINDOW_ID,
       studentName: STATE.studentName,
+      answers: STATE.studentAnswers, // Include answers for evaluation
       totalQuestions: STATE.questions.length,
       totalAnswered: Object.keys(STATE.studentAnswers).length,
       timestamp: Date.now()
@@ -293,6 +294,7 @@
     
     sessionStorage.setItem(key, JSON.stringify(data));
     console.log('💾 [' + WINDOW_ID + '] Saved to: ' + key);
+    console.log('📝 [' + WINDOW_ID + '] Answers:', STATE.studentAnswers);
     
     if (STATE.socket && STATE.socket.readyState === WebSocket.OPEN) {
       console.log('🔌 [' + WINDOW_ID + '] Closing socket');
