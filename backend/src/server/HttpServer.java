@@ -4,7 +4,6 @@ import com.sun.net.httpserver.*;
 import server.questions.QuestionManager;
 import server.questions.Question;
 import server.evaluation.AnswerEvaluator;
-import server.results.ResultDistributor;
 import com.google.gson.Gson;
 
 import java.io.*;
@@ -446,17 +445,20 @@ public class HttpServer {
             }
 
             if ("GET".equals(exchange.getRequestMethod())) {
-                String jsonResponse = ResultDistributor.getResultBoard();
-                
-                byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(200, response.length);
-                OutputStream os = exchange.getResponseBody();
-                os.write(response);
-                os.close();
-                
-                // Also print to console
-                ResultDistributor.printResultBoard();
+                try {
+                    java.util.List<AnswerEvaluator.StudentResult> leaderboard = AnswerEvaluator.getLeaderboard();
+                    
+                    String jsonResponse = new Gson().toJson(leaderboard);
+                    byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                    
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length);
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(response);
+                    os.close();
+                } catch (Exception e) {
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Failed to get leaderboard: " + e.getMessage() + "\"}");
+                }
             } else {
                 exchange.sendResponseHeaders(405, -1);
             }
@@ -485,9 +487,16 @@ public class HttpServer {
                     }
                     
                     String studentName = java.net.URLDecoder.decode(query.substring(5), "UTF-8");
-                    String jsonResponse = ResultDistributor.getStudentResult(studentName);
+                    AnswerEvaluator.StudentResult result = AnswerEvaluator.getStudentResult(studentName);
                     
+                    if (result == null) {
+                        sendResponse(exchange, 404, "{\"success\":false,\"message\":\"Student result not found\"}");
+                        return;
+                    }
+                    
+                    String jsonResponse = new Gson().toJson(result);
                     byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                    
                     exchange.getResponseHeaders().set("Content-Type", "application/json");
                     exchange.sendResponseHeaders(200, response.length);
                     OutputStream os = exchange.getResponseBody();
@@ -495,7 +504,7 @@ public class HttpServer {
                     os.close();
                     
                 } catch (Exception e) {
-                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid request: " + e.getMessage() + "\"}");
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Failed to get result: " + e.getMessage() + "\"}");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);

@@ -2,8 +2,8 @@ package server.evaluation;
 
 import server.questions.Question;
 import server.questions.QuestionManager;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Member 4 - Answer Evaluation & Scoring
@@ -127,5 +127,57 @@ public class AnswerEvaluator {
      */
     public static int getTotalQuestions() {
         return QuestionManager.getAllQuestions().size();
+    }
+    
+    /**
+     * Get student result details
+     * @param studentName Name of the student
+     * @return StudentResult object or null
+     */
+    public static synchronized StudentResult getStudentResult(String studentName) {
+        if (!studentScores.containsKey(studentName)) {
+            return null;
+        }
+        
+        int score = studentScores.get(studentName);
+        int total = getTotalQuestions();
+        double percentage = total > 0 ? (score * 100.0 / total) : 0;
+        
+        return new StudentResult(studentName, score, total, percentage);
+    }
+    
+    /**
+     * Get leaderboard (all students sorted by score)
+     * @return List of StudentResult sorted by score descending
+     */
+    public static synchronized List<StudentResult> getLeaderboard() {
+        int totalQuestions = getTotalQuestions();
+        
+        return studentScores.entrySet().stream()
+            .map(entry -> {
+                String name = entry.getKey();
+                int score = entry.getValue();
+                double percentage = totalQuestions > 0 ? (score * 100.0 / totalQuestions) : 0;
+                return new StudentResult(name, score, totalQuestions, percentage);
+            })
+            .sorted((a, b) -> Integer.compare(b.score, a.score)) // Sort by score descending
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Inner class to represent student result
+     */
+    public static class StudentResult {
+        public String studentName;
+        public int score;
+        public int totalQuestions;
+        public double percentage;
+        
+        public StudentResult(String studentName, int score, int totalQuestions, double percentage) {
+            this.studentName = studentName;
+            this.score = score;
+            this.totalQuestions = totalQuestions;
+            this.percentage = percentage;
+        }
     }
 }
