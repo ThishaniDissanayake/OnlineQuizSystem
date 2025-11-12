@@ -4,6 +4,7 @@ import com.sun.net.httpserver.*;
 import server.questions.QuestionManager;
 import server.questions.Question;
 import server.evaluation.AnswerEvaluator;
+import server.results.ResultDistributor;
 import com.google.gson.Gson;
 
 import java.io.*;
@@ -30,11 +31,11 @@ public class HttpServer {
         server.createContext("/api/questions/delete", new DeleteQuestionHandler());
         server.createContext("/api/students", new StudentsHandler());
         server.createContext("/api/quiz/start", new StartQuizHandler());
+        server.createContext("/api/results/leaderboard", new LeaderboardHandler());
+        server.createContext("/api/results/student", new StudentResultHandler());
         server.createContext("/api/status", new StatusHandler());
         
         // --- Member 4: Answer Evaluation & Scoring API Routes ---
-        server.createContext("/api/results", new ResultsHandler());
-        server.createContext("/api/results/student", new StudentResultHandler());
         server.createContext("/api/evaluate", new EvaluateAnswersHandler());
         
         // --- Static File Serving (catch-all, lowest priority) ---
@@ -71,20 +72,16 @@ public class HttpServer {
                 requestPath = "/index.html";
             }
             
-            System.out.println("📄 Static request: " + requestPath);
-            System.out.println("   Current directory: " + new File(".").getAbsolutePath());
-            
-            // Try multiple possible locations
+            // Resolve static file paths (minimal logging to keep terminal clean)
             File file = null;
             String[] possiblePaths = {
                 ".." + File.separator + "frontend" + requestPath,  // Go up one level to find frontend
                 "frontend" + requestPath,
                 "." + requestPath
             };
-            
+
             for (String path : possiblePaths) {
                 File testFile = new File(path);
-                System.out.println("   Trying: " + testFile.getAbsolutePath() + " - Exists: " + testFile.exists());
                 if (testFile.exists() && !testFile.isDirectory()) {
                     file = testFile;
                     break;
@@ -106,7 +103,7 @@ public class HttpServer {
             // Determine content type
             String contentType = getContentType(requestPath);
             
-            System.out.println("   ✅ Serving: " + file.getAbsolutePath() + " (" + contentType + ")");
+            System.out.println("✅ Serving: " + file.getAbsolutePath() + " (" + contentType + ")");
             
             byte[] fileBytes = Files.readAllBytes(file.toPath());
             
@@ -176,11 +173,11 @@ public class HttpServer {
             }
 
             if ("POST".equals(exchange.getRequestMethod())) {
-                try {
-                    InputStream is = exchange.getRequestBody();
-                    String body = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-                        .lines()
-                        .collect(Collectors.joining("\n"));
+                try (InputStream is = exchange.getRequestBody();
+                     InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
+                     BufferedReader reader = new BufferedReader(isr)) {
+                    
+                    String body = reader.lines().collect(Collectors.joining("\n"));
 
                     Question question = new Gson().fromJson(body, Question.class);
                     
@@ -236,10 +233,12 @@ public class HttpServer {
                     }
                     int id = Integer.parseInt(query.substring(3));
 
-                    InputStream is = exchange.getRequestBody();
-                    String body = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-                        .lines()
-                        .collect(Collectors.joining("\n"));
+                    String body;
+                    try (InputStream is = exchange.getRequestBody();
+                         InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
+                         BufferedReader reader = new BufferedReader(isr)) {
+                        body = reader.lines().collect(Collectors.joining("\n"));
+                    }
 
                     Question question = new Gson().fromJson(body, Question.class);
 
@@ -430,9 +429,9 @@ public class HttpServer {
             }
         }
     }
-
-    // --- Member 4: GET /api/results - Get all student scores (Result Board) ---
-    static class ResultsHandler implements HttpHandler {
+    
+    // --- GET /api/results/leaderboard - Get leaderboard (Member 5) ---
+    static class LeaderboardHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
@@ -446,7 +445,7 @@ public class HttpServer {
 
             if ("GET".equals(exchange.getRequestMethod())) {
                 try {
-                    java.util.List<AnswerEvaluator.StudentResult> leaderboard = AnswerEvaluator.getLeaderboard();
+                    List<AnswerEvaluator.StudentResult> leaderboard = AnswerEvaluator.getLeaderboard();
                     
                     String jsonResponse = new Gson().toJson(leaderboard);
                     byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
@@ -464,8 +463,8 @@ public class HttpServer {
             }
         }
     }
-
-    // --- Member 4: GET /api/results/student?name=X - Get individual student result ---
+    
+    // --- GET /api/results/student?name=X - Get specific student result (Member 4) ---
     static class StudentResultHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -502,7 +501,6 @@ public class HttpServer {
                     OutputStream os = exchange.getResponseBody();
                     os.write(response);
                     os.close();
-                    
                 } catch (Exception e) {
                     sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Failed to get result: " + e.getMessage() + "\"}");
                 }

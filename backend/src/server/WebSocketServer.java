@@ -8,11 +8,15 @@ import java.util.*;
 import server.questions.Question;
 import server.questions.QuestionManager;
 import server.questions.AnswerManager;
+import server.evaluation.AnswerEvaluator;
+import server.results.ResultDistributor;
 
 public class WebSocketServer implements Runnable { 
     private static final int WS_PORT = 8081;
     private ServerSocket serverSocket;
     private static List<WebSocketClient> webSocketClients = Collections.synchronizedList(new ArrayList<>());
+    // Ensure evaluation is triggered only once per quiz session
+    private static volatile boolean evaluationTriggered = false;
     private boolean running = true;
 
     public WebSocketServer() throws IOException {
@@ -158,8 +162,48 @@ public class WebSocketServer implements Runnable {
         System.out.println("🔌 WebSocket client removed: " + client.getStudentName());
         System.out.println("📊 Remaining WebSocket clients: " + webSocketClients.size());
     }
-}
 
+    /**
+     * Check if all WebSocket clients have submitted and trigger evaluation once.
+     */
+    public static void checkAndTriggerEvaluation() {
+        synchronized (webSocketClients) {
+            if (evaluationTriggered) return;
+
+            boolean allSubmitted = true;
+            if (webSocketClients.isEmpty()) {
+                allSubmitted = false;
+            } else {
+                for (WebSocketClient client : webSocketClients) {
+                    if (!client.hasSubmitted()) {
+                        allSubmitted = false;
+                        break;
+                    }
+                }
+            }
+
+            if (allSubmitted) {
+                evaluationTriggered = true;
+                System.out.println("🎯 All WebSocket clients have submitted.");
+                // Note: Auto-evaluation removed - use /api/evaluate endpoint instead
+                /*
+                // Run evaluation and distribution in a separate thread so we don't block socket threads
+                new Thread(() -> {
+                    try {
+                        AnswerEvaluator.evaluateAllStudents();
+                        ResultDistributor.distributeResults();
+                    } catch (Exception e) {
+                        System.err.println("❌ Error during automatic evaluation/distribution: " + e.getMessage());
+                    }
+                }, "Eval-Distributor-Thread").start();
+                */
+            } else {
+                System.out.println("ℹ️ Not all WebSocket clients submitted yet. Waiting...");
+            }
+        }
+    }
+
+}
 class WebSocketClient implements Runnable {
     private Socket socket;
     private InputStream input;
@@ -248,8 +292,11 @@ class WebSocketClient implements Runnable {
             
             System.out.println("✅ [" + clientId + "] SUBMISSION_ACK sent successfully to " + studentName);
             System.out.println("📊 Other students still connected: " + (WebSocketServer.getWebSocketClients().size() - 1));
+            
+            // After this client submitted, check whether all WebSocket clients have submitted
+            WebSocketServer.checkAndTriggerEvaluation();
+            }
         }
-    }
 
     /**
      * CRITICAL: Private message method that ONLY sends to THIS client
@@ -428,5 +475,10 @@ class WebSocketClient implements Runnable {
         QuizServer.removeWebSocketClient(this);
         
         System.out.println("🔌 [" + clientId + "] " + getStudentName() + " disconnected and cleaned up");
+    }
+
+    // Expose hasSubmitted for server-side checks
+    public boolean hasSubmitted() {
+        return hasSubmitted;
     }
 }
