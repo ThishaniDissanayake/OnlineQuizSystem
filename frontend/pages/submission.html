@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Submission</title>
+<style>
+  body { 
+    font-family: sans-serif; 
+    background: #f3f4f6; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    margin: 0;
+  }
+  .container { 
+    background: #fff; 
+    padding: 40px; 
+    border-radius: 12px; 
+    text-align: center; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+    max-width: 500px;
+  }
+  h2 { 
+    color: #065f46; 
+    margin-bottom: 20px;
+  }
+  .success-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+  }
+  p { 
+    color: #047857; 
+    font-size: 1.1em; 
+    margin: 10px 0; 
+  }
+  .student-name {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #2563eb;
+    margin: 20px 0;
+  }
+  button { 
+    margin-top: 30px; 
+    padding: 12px 30px; 
+    background: #2563eb; 
+    color: #fff; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 1em;
+    transition: background 0.3s;
+  }
+  button:hover {
+    background: #1d4ed8;
+  }
+  .error {
+    color: #dc2626;
+  }
+  .debug-info {
+    margin-top: 20px;
+    padding: 10px;
+    background: #f9fafb;
+    border-radius: 6px;
+    font-size: 0.85em;
+    color: #6b7280;
+    text-align: left;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="success-icon">✅</div>
+  <h2>Submission Completed!</h2>
+  <div class="student-name" id="student-name"></div>
+  <p><strong>Total Questions:</strong> <span id="total-questions">-</span></p>
+  <p><strong>Your Answers:</strong> <span id="total-answered">-</span></p>
+  <p style="font-size: 0.9em; color: #6b7280; margin-top: 20px;">
+    Thank you for completing the quiz!
+  </p>
+  <button id="view-results-btn" style="margin-right: 10px;">📊 View Results</button>
+  <button id="view-leaderboard-btn">🏆 View Leaderboard</button>
+  <button id="close-quiz-btn">Return to Home</button>
+  
+  <!-- Debug info (can be removed in production) -->
+  <div class="debug-info" id="debug-info"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  
+  // Get window ID from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const windowId = urlParams.get('w');
+  
+  console.log('📊 Submission page loaded');
+  console.log('🪟 Window ID from URL:', windowId);
+  
+  const debugInfo = document.getElementById('debug-info');
+  debugInfo.innerHTML = `<strong>Debug Info:</strong><br>Window ID: ${windowId || 'Not provided'}`;
+  
+  if (windowId) {
+    const storageKey = `quiz_${windowId}`;
+    console.log('🔍 Looking for key:', storageKey);
+    
+    const dataStr = sessionStorage.getItem(storageKey);
+    console.log('💾 Retrieved data:', dataStr ? 'Found' : 'Not found');
+    
+    if (dataStr) {
+      try {
+        const data = JSON.parse(dataStr);
+        console.log('✅ Parsed submission data:', data);
+        
+        document.getElementById('student-name').textContent = data.studentName;
+        document.getElementById('total-questions').textContent = data.totalQuestions;
+        document.getElementById('total-answered').textContent = data.totalAnswered;
+        
+        debugInfo.innerHTML += `<br>Student: ${data.studentName}<br>Time: ${new Date(data.timestamp).toLocaleTimeString()}`;
+        
+        // Clean up this window's data
+        sessionStorage.removeItem(storageKey);
+        console.log('🗑️ Cleaned up session data');
+        
+      } catch (e) {
+        console.error('❌ Error parsing data:', e);
+        showError('Failed to load submission data');
+      }
+    } else {
+      console.warn('⚠️ No data found for key:', storageKey);
+      
+      // Try to find any quiz data as fallback
+      const allKeys = Object.keys(sessionStorage);
+      const quizKeys = allKeys.filter(k => k.startsWith('quiz_'));
+      console.log('📋 Available quiz keys:', quizKeys);
+      
+      if (quizKeys.length > 0) {
+        debugInfo.innerHTML += `<br>Found ${quizKeys.length} quiz sessions in storage`;
+        // Use the most recent one
+        const latestKey = quizKeys[quizKeys.length - 1];
+        const fallbackData = JSON.parse(sessionStorage.getItem(latestKey));
+        
+        document.getElementById('student-name').textContent = fallbackData.studentName;
+        document.getElementById('total-questions').textContent = fallbackData.totalQuestions;
+        document.getElementById('total-answered').textContent = fallbackData.totalAnswered;
+        
+        sessionStorage.removeItem(latestKey);
+      } else {
+        showError('No submission data found');
+      }
+    }
+  } else {
+    console.warn('⚠️ No window ID in URL');
+    showError('Invalid submission URL');
+  }
+  
+  function showError(message) {
+    document.getElementById('student-name').textContent = message;
+    document.getElementById('student-name').classList.add('error');
+    document.getElementById('total-questions').textContent = 'N/A';
+    document.getElementById('total-answered').textContent = 'N/A';
+    debugInfo.innerHTML += `<br><span class="error">Error: ${message}</span>`;
+  }
+  
+  // Store student name for results page
+  let currentStudentName = null;
+  
+  document.getElementById('view-results-btn').onclick = () => {
+    if (currentStudentName) {
+      window.location.href = `result.html?student=${encodeURIComponent(currentStudentName)}`;
+    } else {
+      alert('Student name not available. Please wait for results to be evaluated.');
+    }
+  };
+  
+  document.getElementById('view-leaderboard-btn').onclick = () => {
+    window.location.href = 'leaderboard.html';
+  };
+  
+  document.getElementById('close-quiz-btn').onclick = () => {
+    console.log('🏠 Returning to home page');
+    
+    // Clean up any remaining quiz data
+    const keys = Object.keys(sessionStorage);
+    keys.forEach(key => {
+      if (key.startsWith('quiz_')) {
+        sessionStorage.removeItem(key);
+        console.log('🗑️ Cleaned up:', key);
+      }
+    });
+    
+    window.location.href = "../index.html";
+  };
+  
+  // Update currentStudentName when data is loaded
+  if (windowId) {
+    const storageKey = `quiz_${windowId}`;
+    const dataStr = sessionStorage.getItem(storageKey);
+    if (dataStr) {
+      try {
+        const data = JSON.parse(dataStr);
+        currentStudentName = data.studentName;
+        sessionStorage.setItem('studentName', currentStudentName);
+      } catch (e) {
+        console.error('Error storing student name:', e);
+      }
+    }
+  }
+})();
+</script>
+</body>
+</html>

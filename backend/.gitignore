@@ -1,0 +1,27 @@
+# === Build Output ===
+/out/
+*.class
+
+# === Dependencies ===
+/lib/
+
+# === Logs & Temp Files ===
+*.log
+*.tmp
+*.bak
+*.swp
+
+# === IDE Files ===
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# === OS-specific ===
+.DS_Store
+Thumbs.db
+
+# === Environment Config ===
+.env
