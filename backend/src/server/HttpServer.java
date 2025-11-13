@@ -43,8 +43,6 @@ public class HttpServer {
         server.start();
         System.out.println("✅ HTTP API Server started on port " + HTTP_PORT);
         System.out.println("📄 Serving static files from: ./frontend/");
-        System.out.println("🎓 Student Portal: http://localhost:8080/pages/student.html");
-        System.out.println("📊 Admin Portal: http://localhost:8080/admin/dashboard.html");
     }
 
     public void stop() {
@@ -87,10 +85,7 @@ public class HttpServer {
             }
             
             if (file == null) {
-                System.out.println("   ❌ Not found in any location");
-                String response = "404 - File Not Found: " + requestPath + 
-                                "\nCurrent dir: " + new File(".").getAbsolutePath() +
-                                "\nTried: frontend" + requestPath;
+                String response = "404 - File Not Found: " + requestPath;
                 exchange.sendResponseHeaders(404, response.length());
                 OutputStream os = exchange.getResponseBody();
                 os.write(response.getBytes());
@@ -100,8 +95,6 @@ public class HttpServer {
             
             // Determine content type
             String contentType = getContentType(requestPath);
-            
-            System.out.println("✅ Serving: " + file.getAbsolutePath() + " (" + contentType + ")");
             
             byte[] fileBytes = Files.readAllBytes(file.toPath());
             

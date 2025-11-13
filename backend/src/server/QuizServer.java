@@ -28,8 +28,12 @@ public class QuizServer {
             // Start TCP Server for Java clients
             serverSocket = new ServerSocket(PORT);
             System.out.println("✅ Quiz Server (TCP) started on port " + PORT);
-            System.out.println("📊 Admin Dashboard: http://localhost:8080/admin/dashboard.html");
-            System.out.println("👨‍🎓 Student Portal: http://localhost:8080/student/student.html");
+            System.out.println("� Login Page: http://localhost:8080/index.html");
+            System.out.println("�📊 Admin Portal: http://localhost:8080/pages/admin.html");
+            System.out.println("👨‍🎓 Student Portal: http://localhost:8080/pages/student.html");
+            System.out.println("📝 Questions Page: http://localhost:8080/pages/questions.html");
+            System.out.println("🏆 Leaderboard: http://localhost:8080/pages/leaderboard.html");
+            System.out.println("📈 Results Page: http://localhost:8080/pages/result.html");
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
