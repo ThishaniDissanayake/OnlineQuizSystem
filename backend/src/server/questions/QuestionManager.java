@@ -9,7 +9,7 @@ import java.util.*;
 
 public class QuestionManager {
     private static List<Question> questions = new ArrayList<>();
-    private static final String QUESTIONS_FILE = "resources/questions.json";
+    private static final String QUESTIONS_FILE = "backend/resources/questions.json";
 
     // Load questions from JSON file (called at server startup)
     public static void loadQuestions() {

@@ -23,7 +23,7 @@ public class AnswerEvaluator {
     // Thread-safe score storage
     private static final ConcurrentHashMap<String, StudentResult> studentResults = new ConcurrentHashMap<>();
     private static final Object evaluationLock = new Object();
-    private static final String ANSWERS_FILE = "resources/answers.json";
+    private static final String ANSWERS_FILE = "backend/resources/answers.json";
     
     /**
      * Represents a student's complete result

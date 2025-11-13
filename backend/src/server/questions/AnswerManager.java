@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class AnswerManager {
 
-    private static final String ANSWERS_FILE = "resources/answers.json";
+    private static final String ANSWERS_FILE = "backend/resources/answers.json";
     private static Map<String, Map<Integer, String>> studentAnswers = new HashMap<>();
 
     // Record an answer
