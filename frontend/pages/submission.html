@@ -10,9 +10,8 @@
     display: flex; 
     justify-content: center; 
     align-items: center; 
-    min-height: 100vh; 
+    height: 100vh; 
     margin: 0;
-    padding: 20px;
   }
   .container { 
     background: #fff; 
@@ -20,8 +19,7 @@
     border-radius: 12px; 
     text-align: center; 
     box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-    max-width: 600px;
-    width: 100%;
+    max-width: 500px;
   }
   h2 { 
     color: #065f46; 
@@ -42,43 +40,6 @@
     color: #2563eb;
     margin: 20px 0;
   }
-  .score-display {
-    margin: 30px 0;
-    padding: 25px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-    color: white;
-  }
-  .score-display h3 {
-    margin: 0 0 15px 0;
-    font-size: 1.2em;
-  }
-  .score-value {
-    font-size: 3em;
-    font-weight: bold;
-    margin: 10px 0;
-  }
-  .percentage {
-    font-size: 1.5em;
-    opacity: 0.9;
-  }
-  .loading {
-    padding: 20px;
-    color: #6b7280;
-  }
-  .loading-spinner {
-    border: 4px solid #f3f4f6;
-    border-top: 4px solid #2563eb;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
   button { 
     margin-top: 30px; 
     padding: 12px 30px; 
@@ -89,231 +50,161 @@
     cursor: pointer; 
     font-size: 1em;
     transition: background 0.3s;
-    margin-right: 10px;
   }
   button:hover {
     background: #1d4ed8;
   }
-  button.secondary {
-    background: #6b7280;
-  }
-  button.secondary:hover {
-    background: #4b5563;
-  }
   .error {
     color: #dc2626;
   }
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    margin: 20px 0;
-  }
-  .stat-box {
-    padding: 15px;
+  .debug-info {
+    margin-top: 20px;
+    padding: 10px;
     background: #f9fafb;
-    border-radius: 8px;
-    border-left: 4px solid #2563eb;
-  }
-  .stat-label {
-    font-size: 0.9em;
+    border-radius: 6px;
+    font-size: 0.85em;
     color: #6b7280;
-    margin-bottom: 5px;
-  }
-  .stat-value {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #1f2937;
+    text-align: left;
   }
 </style>
 </head>
 <body>
 <div class="container">
-  <div id="evaluating-section" class="loading">
-    <div class="loading-spinner"></div>
-    <p>Evaluating your answers...</p>
-  </div>
-
-  <div id="results-section" style="display: none;">
-    <div class="success-icon">✅</div>
-    <h2>Quiz Submitted Successfully!</h2>
-    <div class="student-name" id="student-name"></div>
-    
-    <div class="score-display">
-      <h3>Your Score</h3>
-      <div class="score-value" id="score-display">-</div>
-      <div class="percentage" id="percentage-display">-</div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-label">Total Questions</div>
-        <div class="stat-value" id="total-questions">-</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Answered</div>
-        <div class="stat-value" id="total-answered">-</div>
-      </div>
-    </div>
-
-    <p style="font-size: 0.9em; color: #6b7280; margin-top: 20px;">
-      Thank you for completing the quiz!
-    </p>
-
-    <div>
-      <button id="view-evaluation-btn">View Answer Evaluation</button>
-      <button id="view-results-btn">View Leaderboard</button>
-      <button id="close-quiz-btn" class="secondary">Return to Home</button>
-    </div>
-  </div>
-
-  <div id="error-section" style="display: none;">
-    <div class="error">
-      <h2>Error</h2>
-      <p id="error-message"></p>
-      <button id="retry-btn">Try Again</button>
-      <button id="home-btn" class="secondary">Return to Home</button>
-    </div>
-  </div>
+  <div class="success-icon">✅</div>
+  <h2>Submission Completed!</h2>
+  <div class="student-name" id="student-name"></div>
+  <p><strong>Total Questions:</strong> <span id="total-questions">-</span></p>
+  <p><strong>Your Answers:</strong> <span id="total-answered">-</span></p>
+  <p style="font-size: 0.9em; color: #6b7280; margin-top: 20px;">
+    Thank you for completing the quiz!
+  </p>
+  <button id="view-results-btn" style="margin-right: 10px;">📊 View Results</button>
+  <button id="view-leaderboard-btn">🏆 View Leaderboard</button>
+  <button id="close-quiz-btn">Return to Home</button>
+  
+  <!-- Debug info (can be removed in production) -->
+  <div class="debug-info" id="debug-info"></div>
 </div>
 
-<script type="module">
-import { API_ENDPOINTS } from '../js/api/endpoints.js';
-
-(async function() {
+<script>
+(function() {
   'use strict';
   
+  // Get window ID from URL
   const urlParams = new URLSearchParams(window.location.search);
   const windowId = urlParams.get('w');
   
-  console.log('📊 Submission page loaded, Window ID:', windowId);
+  console.log('📊 Submission page loaded');
+  console.log('🪟 Window ID from URL:', windowId);
   
-  if (!windowId) {
-    showError('Invalid submission URL - no window ID provided');
-    return;
-  }
-
-  const storageKey = `quiz_${windowId}`;
-  const dataStr = sessionStorage.getItem(storageKey);
+  const debugInfo = document.getElementById('debug-info');
+  debugInfo.innerHTML = `<strong>Debug Info:</strong><br>Window ID: ${windowId || 'Not provided'}`;
   
-  if (!dataStr) {
-    showError('No submission data found');
-    return;
-  }
-
-  try {
-    const data = JSON.parse(dataStr);
-    console.log('✅ Submission data:', data);
+  if (windowId) {
+    const storageKey = `quiz_${windowId}`;
+    console.log('🔍 Looking for key:', storageKey);
     
-    // Call evaluation API
-    await evaluateAnswers(data);
+    const dataStr = sessionStorage.getItem(storageKey);
+    console.log('💾 Retrieved data:', dataStr ? 'Found' : 'Not found');
     
-    // Clean up session storage
-    sessionStorage.removeItem(storageKey);
-    
-  } catch (e) {
-    console.error('❌ Error:', e);
-    showError('Failed to process submission: ' + e.message);
-  }
-
-  async function evaluateAnswers(data) {
-    try {
-      const response = await fetch(API_ENDPOINTS.EVALUATE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          studentName: data.studentName,
-          answers: data.answers
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+    if (dataStr) {
+      try {
+        const data = JSON.parse(dataStr);
+        console.log('✅ Parsed submission data:', data);
+        
+        document.getElementById('student-name').textContent = data.studentName;
+        document.getElementById('total-questions').textContent = data.totalQuestions;
+        document.getElementById('total-answered').textContent = data.totalAnswered;
+        
+        debugInfo.innerHTML += `<br>Student: ${data.studentName}<br>Time: ${new Date(data.timestamp).toLocaleTimeString()}`;
+        
+        // Clean up this window's data
+        sessionStorage.removeItem(storageKey);
+        console.log('🗑️ Cleaned up session data');
+        
+      } catch (e) {
+        console.error('❌ Error parsing data:', e);
+        showError('Failed to load submission data');
       }
-
-      const result = await response.json();
-      console.log('📊 Evaluation result:', result);
-
-      if (result.success) {
-        displayResults(data, result);
-      } else {
-        throw new Error(result.message || 'Evaluation failed');
-      }
-
-    } catch (error) {
-      console.error('❌ Evaluation error:', error);
-      // Still show submission success but without score
-      displayResults(data, null);
-    }
-  }
-
-  function displayResults(data, evaluation) {
-    document.getElementById('evaluating-section').style.display = 'none';
-    document.getElementById('results-section').style.display = 'block';
-
-    document.getElementById('student-name').textContent = data.studentName;
-    document.getElementById('total-questions').textContent = data.totalQuestions;
-    document.getElementById('total-answered').textContent = data.totalAnswered;
-
-    if (evaluation) {
-      document.getElementById('score-display').textContent = 
-        `${evaluation.score} / ${evaluation.totalQuestions}`;
-      document.getElementById('percentage-display').textContent = 
-        `${evaluation.percentage.toFixed(1)}%`;
-      
-      // Store evaluation data for the evaluation page - include answers and detailed results
-      sessionStorage.setItem('evaluation_data', JSON.stringify({
-        studentName: data.studentName,
-        answers: data.answers,
-        score: evaluation.score,
-        totalQuestions: evaluation.totalQuestions,
-        percentage: evaluation.percentage,
-        detailedResults: evaluation.detailedResults || {}
-      }));
     } else {
-      document.getElementById('score-display').textContent = 'Evaluating...';
-      document.getElementById('percentage-display').textContent = 
-        'Results will be available shortly';
+      console.warn('⚠️ No data found for key:', storageKey);
+      
+      // Try to find any quiz data as fallback
+      const allKeys = Object.keys(sessionStorage);
+      const quizKeys = allKeys.filter(k => k.startsWith('quiz_'));
+      console.log('📋 Available quiz keys:', quizKeys);
+      
+      if (quizKeys.length > 0) {
+        debugInfo.innerHTML += `<br>Found ${quizKeys.length} quiz sessions in storage`;
+        // Use the most recent one
+        const latestKey = quizKeys[quizKeys.length - 1];
+        const fallbackData = JSON.parse(sessionStorage.getItem(latestKey));
+        
+        document.getElementById('student-name').textContent = fallbackData.studentName;
+        document.getElementById('total-questions').textContent = fallbackData.totalQuestions;
+        document.getElementById('total-answered').textContent = fallbackData.totalAnswered;
+        
+        sessionStorage.removeItem(latestKey);
+      } else {
+        showError('No submission data found');
+      }
     }
+  } else {
+    console.warn('⚠️ No window ID in URL');
+    showError('Invalid submission URL');
   }
-
+  
   function showError(message) {
-    document.getElementById('evaluating-section').style.display = 'none';
-    document.getElementById('error-section').style.display = 'block';
-    document.getElementById('error-message').textContent = message;
+    document.getElementById('student-name').textContent = message;
+    document.getElementById('student-name').classList.add('error');
+    document.getElementById('total-questions').textContent = 'N/A';
+    document.getElementById('total-answered').textContent = 'N/A';
+    debugInfo.innerHTML += `<br><span class="error">Error: ${message}</span>`;
   }
-
-  // Event listeners
-  document.getElementById('view-evaluation-btn')?.addEventListener('click', () => {
-    window.location.href = 'evaluation.html';
-  });
-
-  document.getElementById('view-results-btn')?.addEventListener('click', () => {
-    window.location.href = 'results.html?source=student';
-  });
-
-  document.getElementById('close-quiz-btn')?.addEventListener('click', () => {
-    cleanupAndGoHome();
-  });
-
-  document.getElementById('home-btn')?.addEventListener('click', () => {
-    cleanupAndGoHome();
-  });
-
-  document.getElementById('retry-btn')?.addEventListener('click', () => {
-    window.location.href = 'student.html';
-  });
-
-  function cleanupAndGoHome() {
+  
+  // Store student name for results page
+  let currentStudentName = null;
+  
+  document.getElementById('view-results-btn').onclick = () => {
+    if (currentStudentName) {
+      window.location.href = `result.html?student=${encodeURIComponent(currentStudentName)}`;
+    } else {
+      alert('Student name not available. Please wait for results to be evaluated.');
+    }
+  };
+  
+  document.getElementById('view-leaderboard-btn').onclick = () => {
+    window.location.href = 'leaderboard.html';
+  };
+  
+  document.getElementById('close-quiz-btn').onclick = () => {
+    console.log('🏠 Returning to home page');
+    
+    // Clean up any remaining quiz data
     const keys = Object.keys(sessionStorage);
     keys.forEach(key => {
       if (key.startsWith('quiz_')) {
         sessionStorage.removeItem(key);
+        console.log('🗑️ Cleaned up:', key);
       }
     });
+    
     window.location.href = "../index.html";
+  };
+  
+  // Update currentStudentName when data is loaded
+  if (windowId) {
+    const storageKey = `quiz_${windowId}`;
+    const dataStr = sessionStorage.getItem(storageKey);
+    if (dataStr) {
+      try {
+        const data = JSON.parse(dataStr);
+        currentStudentName = data.studentName;
+        sessionStorage.setItem('studentName', currentStudentName);
+      } catch (e) {
+        console.error('Error storing student name:', e);
+      }
+    }
   }
 })();
 </script>

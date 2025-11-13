@@ -184,9 +184,8 @@ public class WebSocketServer implements Runnable {
 
             if (allSubmitted) {
                 evaluationTriggered = true;
-                System.out.println("🎯 All WebSocket clients have submitted.");
-                // Note: Auto-evaluation removed - use /api/evaluate endpoint instead
-                /*
+                System.out.println("🎯 All WebSocket clients have submitted. Triggering evaluation and distribution...");
+
                 // Run evaluation and distribution in a separate thread so we don't block socket threads
                 new Thread(() -> {
                     try {
@@ -196,7 +195,6 @@ public class WebSocketServer implements Runnable {
                         System.err.println("❌ Error during automatic evaluation/distribution: " + e.getMessage());
                     }
                 }, "Eval-Distributor-Thread").start();
-                */
             } else {
                 System.out.println("ℹ️ Not all WebSocket clients submitted yet. Waiting...");
             }

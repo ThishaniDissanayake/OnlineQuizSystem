@@ -31,12 +31,10 @@ public class HttpServer {
         server.createContext("/api/questions/delete", new DeleteQuestionHandler());
         server.createContext("/api/students", new StudentsHandler());
         server.createContext("/api/quiz/start", new StartQuizHandler());
+        server.createContext("/api/quiz/evaluate", new EvaluateQuizHandler());
         server.createContext("/api/results/leaderboard", new LeaderboardHandler());
         server.createContext("/api/results/student", new StudentResultHandler());
         server.createContext("/api/status", new StatusHandler());
-        
-        // --- Member 4: Answer Evaluation & Scoring API Routes ---
-        server.createContext("/api/evaluate", new EvaluateAnswersHandler());
         
         // --- Static File Serving (catch-all, lowest priority) ---
         server.createContext("/", new StaticFileHandler());
@@ -430,6 +428,37 @@ public class HttpServer {
         }
     }
     
+    // --- POST /api/quiz/evaluate - Evaluate all answers (Member 4) ---
+    static class EvaluateQuizHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    // Evaluate all student answers (Member 4)
+                    AnswerEvaluator.evaluateAllStudents();
+                    // Distribute results to all students (Member 5)
+                    ResultDistributor.distributeResults();
+                    
+                    String response = "{\"success\":true,\"message\":\"Quiz evaluated and results distributed\"}";
+                    sendResponse(exchange, 200, response);
+                } catch (Exception e) {
+                    sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Evaluation failed: " + e.getMessage() + "\"}");
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+    
     // --- GET /api/results/leaderboard - Get leaderboard (Member 5) ---
     static class LeaderboardHandler implements HttpHandler {
         @Override
@@ -503,71 +532,6 @@ public class HttpServer {
                     os.close();
                 } catch (Exception e) {
                     sendResponse(exchange, 500, "{\"success\":false,\"message\":\"Failed to get result: " + e.getMessage() + "\"}");
-                }
-            } else {
-                exchange.sendResponseHeaders(405, -1);
-            }
-        }
-    }
-
-    // --- Member 4: POST /api/evaluate - Evaluate answers and calculate scores ---
-    static class EvaluateAnswersHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
-
-            if ("OPTIONS".equals(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(204, -1);
-                return;
-            }
-
-            if ("POST".equals(exchange.getRequestMethod())) {
-                try {
-                    InputStream is = exchange.getRequestBody();
-                    String body = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-                        .lines()
-                        .collect(Collectors.joining("\n"));
-
-                    // Expected JSON: {"studentName": "John", "answers": {"1": "A", "2": "B"}}
-                    @SuppressWarnings("unchecked")
-                    java.util.Map<String, Object> requestData = new Gson().fromJson(body, java.util.Map.class);
-                    
-                    String studentName = (String) requestData.get("studentName");
-                    @SuppressWarnings("unchecked")
-                    java.util.Map<String, String> answersMap = (java.util.Map<String, String>) requestData.get("answers");
-                    
-                    if (studentName == null || answersMap == null) {
-                        sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Student name and answers are required\"}");
-                        return;
-                    }
-                    
-                    // Convert String keys to Integer for question IDs
-                    java.util.Map<Integer, String> answers = new java.util.HashMap<>();
-                    for (java.util.Map.Entry<String, String> entry : answersMap.entrySet()) {
-                        answers.put(Integer.parseInt(entry.getKey()), entry.getValue());
-                    }
-                    
-                    // Evaluate all answers
-                    int totalScore = AnswerEvaluator.evaluateAllAnswers(studentName, answers);
-                    int totalQuestions = AnswerEvaluator.getTotalQuestions();
-                    java.util.Map<Integer, Boolean> detailedResults = AnswerEvaluator.getStudentResults(studentName);
-                    
-                    // Build detailed results JSON
-                    Gson gson = new Gson();
-                    String detailedResultsJson = gson.toJson(detailedResults);
-                    
-                    String response = "{\"success\":true,\"studentName\":\"" + studentName + 
-                                    "\",\"score\":" + totalScore + 
-                                    ",\"totalQuestions\":" + totalQuestions + 
-                                    ",\"percentage\":" + (totalQuestions > 0 ? (totalScore * 100.0 / totalQuestions) : 0) + 
-                                    ",\"detailedResults\":" + detailedResultsJson + "}";
-                    
-                    sendResponse(exchange, 200, response);
-
-                } catch (Exception e) {
-                    sendResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid request: " + e.getMessage() + "\"}");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);

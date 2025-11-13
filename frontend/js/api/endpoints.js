@@ -1,6 +1,6 @@
 const API_BASE = "http://localhost:8080";
 
-export const API_ENDPOINTS = {
+export const ENDPOINTS = {
   // Member 1 APIs
   STATUS: `${API_BASE}/api/status`,
   STUDENTS: `${API_BASE}/api/students`,
@@ -11,16 +11,9 @@ export const API_ENDPOINTS = {
   ADD_QUESTION: `${API_BASE}/api/questions/add`,
   UPDATE_QUESTION: `${API_BASE}/api/questions/update`,
   DELETE_QUESTION: `${API_BASE}/api/questions/delete`,
-
-  // Member 4: Answer Evaluation & Scoring APIs
-  EVALUATE: `${API_BASE}/api/evaluate`,
-  GET_QUESTIONS: `${API_BASE}/api/questions`,
   
   // Member 4 & 5: Evaluation and Results APIs
   EVALUATE_QUIZ: `${API_BASE}/api/quiz/evaluate`,
   LEADERBOARD: `${API_BASE}/api/results/leaderboard`,
   STUDENT_RESULT: `${API_BASE}/api/results/student`,
 };
-
-// Keep backward compatibility
-export const ENDPOINTS = API_ENDPOINTS;
