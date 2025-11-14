@@ -162,6 +162,39 @@
       console.log('✅ [' + WINDOW_ID + '] Valid ACK - I submitted, so processing...');
       handleSubmissionSuccess();
     }
+    else if (trimmed.startsWith("RESULT|")) {
+      console.log('📊 [' + WINDOW_ID + '] RESULT MESSAGE RECEIVED');
+      try {
+        const jsonPart = trimmed.substring(7); // Remove "RESULT|"
+        const resultData = JSON.parse(jsonPart);
+        
+        if (resultData.studentName === STATE.studentName) {
+          console.log('✅ [' + WINDOW_ID + '] This is MY result!');
+          console.log('   Score: ' + resultData.score + '/' + resultData.totalQuestions);
+          console.log('   Percentage: ' + resultData.percentage + '%');
+          
+          // Store result and redirect to result page
+          sessionStorage.setItem('studentName', STATE.studentName);
+          alert('Your quiz has been evaluated!\nScore: ' + resultData.score + '/' + resultData.totalQuestions + '\nPercentage: ' + resultData.percentage + '%');
+          window.location.href = 'result.html?student=' + encodeURIComponent(STATE.studentName);
+        }
+      } catch (e) {
+        console.error('Error parsing result:', e);
+      }
+    }
+    else if (trimmed.startsWith("LEADERBOARD|")) {
+      console.log('🏆 [' + WINDOW_ID + '] LEADERBOARD RECEIVED');
+      try {
+        const jsonPart = trimmed.substring(12); // Remove "LEADERBOARD|"
+        const leaderboardData = JSON.parse(jsonPart);
+        console.log('   Total students: ' + leaderboardData.totalStudents);
+        console.log('   Opening leaderboard page...');
+        // Optionally redirect to leaderboard
+        // window.location.href = 'leaderboard.html';
+      } catch (e) {
+        console.error('Error parsing leaderboard:', e);
+      }
+    }
     else if (trimmed.startsWith("Welcome")) {
       console.log('👋 [' + WINDOW_ID + '] ' + trimmed);
     }
@@ -278,7 +311,7 @@
   
   function handleSubmissionSuccess() {
     console.log('🎉 [' + WINDOW_ID + '] ================================');
-    console.log('🎉 [' + WINDOW_ID + '] SUCCESS - Processing completion');
+    console.log('🎉 [' + WINDOW_ID + '] SUBMISSION ACKNOWLEDGED');
     console.log('🎉 [' + WINDOW_ID + '] Student: ' + STATE.studentName);
     console.log('🎉 [' + WINDOW_ID + '] ================================');
     
@@ -293,19 +326,30 @@
     };
     
     sessionStorage.setItem(key, JSON.stringify(data));
+    sessionStorage.setItem('studentName', STATE.studentName);
     console.log('💾 [' + WINDOW_ID + '] Saved to: ' + key);
     console.log('📝 [' + WINDOW_ID + '] Answers:', STATE.studentAnswers);
     
-    if (STATE.socket && STATE.socket.readyState === WebSocket.OPEN) {
-      console.log('🔌 [' + WINDOW_ID + '] Closing socket');
-      STATE.socket.close(1000, "Done");
-      STATE.socket = null;
-    }
+    // Show waiting screen
+    quizSection.style.display = 'none';
+    waitingSection.style.display = 'block';
+    document.querySelector('.student-name-display').textContent = 'Submission complete! Waiting for evaluation...';
+    document.querySelector('.waiting-content h2').textContent = 'Quiz Submitted! ✅';
+    document.querySelector('.waiting-content p').textContent = 'Please wait while the admin evaluates your answers...';
     
+    console.log('⏳ [' + WINDOW_ID + '] Waiting for evaluation results...');
+    console.log('🔌 [' + WINDOW_ID + '] Keeping connection OPEN to receive results');
+    
+    // DON'T close the socket - wait for RESULT message
+    // If no result after 2 minutes, redirect to submission page
     setTimeout(function() {
-      console.log('🚀 [' + WINDOW_ID + '] Redirecting...');
-      window.location.href = 'submission.html?w=' + WINDOW_ID;
-    }, 150);
+      if (STATE.socket && STATE.socket.readyState === WebSocket.OPEN) {
+        console.log('⏰ [' + WINDOW_ID + '] Timeout - redirecting to submission page');
+        STATE.socket.close(1000, "Timeout");
+        STATE.socket = null;
+        window.location.href = 'submission.html?w=' + WINDOW_ID;
+      }
+    }, 120000); // 2 minutes timeout
   }
   
   function showWaitingScreen() {

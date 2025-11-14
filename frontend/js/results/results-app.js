@@ -23,8 +23,24 @@ async function loadResults() {
         resultsTableSection.style.display = 'none';
         statsSection.style.display = 'none';
 
-        // Fetch results from API
-        const response = await httpGet(API_ENDPOINTS.RESULTS);
+        // Fetch leaderboard and normalize to expected shape { totalQuestions, scores, timestamp }
+        const leaderboard = await httpGet(API_ENDPOINTS.LEADERBOARD);
+        
+        if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
+            loadingSection.style.display = 'none';
+            noResultsSection.style.display = 'block';
+            return;
+        }
+        
+        const totalQuestions = leaderboard[0]?.totalQuestions || 0;
+        const scores = {};
+        leaderboard.forEach(item => {
+            // item: { studentName, score, totalQuestions, percentage, ... }
+            if (item && item.studentName != null) {
+                scores[item.studentName] = item.score;
+            }
+        });
+        const response = { totalQuestions, scores, timestamp: Date.now() };
         
         if (!response || !response.scores || Object.keys(response.scores).length === 0) {
             loadingSection.style.display = 'none';

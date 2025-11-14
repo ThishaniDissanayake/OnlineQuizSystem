@@ -97,3 +97,9 @@ export class HttpClient {
     return await this.delete(`${ENDPOINTS.DELETE_QUESTION}?id=${id}`);
   }
 }
+
+// Convenience function exports used by some modules
+export async function httpGet(url) { return HttpClient.get(url); }
+export async function httpPost(url, data = {}) { return HttpClient.post(url, data); }
+export async function httpPut(url, data = {}) { return HttpClient.put(url, data); }
+export async function httpDelete(url) { return HttpClient.delete(url); }

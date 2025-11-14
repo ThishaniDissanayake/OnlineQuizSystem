@@ -146,6 +146,20 @@ main {
   transform: translateY(-2px);
 }
 
+.btn-info {
+  background: #0ea5e9;
+  color: white;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-info:hover {
+  background: #0284c7;
+  transform: translateY(-2px);
+}
+
 .btn-icon {
   background: none;
   border: none;
@@ -172,6 +186,7 @@ main {
   display: flex;
   gap: 10px;
   margin-top: 15px;
+  flex-wrap: wrap;
 }
 
 /* Server Info */

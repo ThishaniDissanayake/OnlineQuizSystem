@@ -14,6 +14,7 @@ const questionCount = document.getElementById("question-count");
 const studentsList = document.getElementById("students-list");
 const activityLog = document.getElementById("activity-log");
 const startQuizBtn = document.getElementById("start-quiz-btn");
+const evaluateQuizBtn = document.getElementById("evaluate-quiz-btn");
 const refreshBtn = document.getElementById("refresh-btn");
 const startQuizCard = document.getElementById("start-quiz-card");
 
@@ -27,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Setup event listeners
 function setupEventListeners() {
   startQuizBtn.addEventListener("click", startQuiz);
+  evaluateQuizBtn.addEventListener("click", evaluateQuiz);
   refreshBtn.addEventListener("click", refreshAll);
   
   // Add click handler for start quiz action card
@@ -167,12 +169,70 @@ function startQuiz() {
     .then((data) => {
       addLog("Admin", `Quiz started! ${data.studentCount} students, ${questionCountNum} questions`);
       alert(`✅ Quiz started successfully!\n\nStudents: ${data.studentCount}\nQuestions: ${questionCountNum}\n\nQuestions have been broadcast to all connected students.`);
+      
+      // Enable evaluate button after quiz starts
+      evaluateQuizBtn.disabled = false;
     })
     .catch((error) => {
       console.error("Error starting quiz:", error);
       addLog("Error", "Failed to start quiz");
       alert("❌ Failed to start quiz. Check console for errors.");
     });
+}
+
+// ===== MEMBER 4 & 5: Evaluate Quiz and Distribute Results =====
+async function evaluateQuiz() {
+  if (!confirm("Evaluate all student answers and distribute results?\n\nThis will:\n1. Evaluate all submitted answers\n2. Calculate scores\n3. Send results to students\n4. Generate leaderboard")) {
+    return;
+  }
+  
+  evaluateQuizBtn.disabled = true;
+  evaluateQuizBtn.textContent = "⏳ Evaluating...";
+  
+  try {
+    const response = await fetch("http://localhost:8080/api/quiz/evaluate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to evaluate quiz");
+    }
+    
+    const result = await response.json();
+    
+    addLog("Admin", "✅ Quiz evaluated successfully!");
+    addLog("System", "Results distributed to all students");
+    
+    alert("✅ Quiz Evaluation Complete!\n\n" +
+          "• All answers have been evaluated\n" +
+          "• Scores calculated with thread-safe synchronization\n" +
+          "• Results distributed to students via NIO broadcast\n" +
+          "• Leaderboard generated\n\n" +
+          "Students can now view their results!");
+    
+    evaluateQuizBtn.textContent = "✅ Evaluated";
+    
+    // Redirect to leaderboard after 2 seconds
+    setTimeout(() => {
+      if (confirm("View the leaderboard now?")) {
+        window.location.href = "leaderboard.html";
+      } else {
+        evaluateQuizBtn.disabled = false;
+        evaluateQuizBtn.textContent = "📊 Evaluate & Show Results";
+      }
+    }, 2000);
+    
+  } catch (error) {
+    console.error("Error evaluating quiz:", error);
+    addLog("Error", "Failed to evaluate quiz: " + error.message);
+    alert("❌ Failed to evaluate quiz!\n\nError: " + error.message);
+    
+    evaluateQuizBtn.disabled = false;
+    evaluateQuizBtn.textContent = "📊 Evaluate & Show Results";
+  }
 }
 
 // Add log entry

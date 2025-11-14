@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Result - Online Quiz System</title>
+    <link rel="stylesheet" href="../styles/student.css">
+    <style>
+        .result-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 30px;
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .result-header h1 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .score-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .score-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .score-box.success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .score-box.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .score-box.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .score-box h3 {
+            font-size: 36px;
+            margin: 10px 0;
+        }
+        
+        .score-box p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .question-review {
+            margin-top: 30px;
+        }
+        
+        .question-item {
+            background: #f9fafb;
+            border-left: 4px solid #d1d5db;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+        
+        .question-item.correct {
+            border-left-color: #10b981;
+            background: #ecfdf5;
+        }
+        
+        .question-item.wrong {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        
+        .question-text {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .answer-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .answer-row.correct-answer {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .answer-row.wrong-answer {
+            color: #ef4444;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="result-container">
+        <div id="loading-section" class="loading">
+            <div class="spinner"></div>
+            <h2>Loading Your Results...</h2>
+            <p>Please wait while we fetch your score</p>
+        </div>
+        
+        <div id="result-section" style="display: none;">
+            <div class="result-card">
+                <div class="result-header">
+                    <h1>🎯 Quiz Results</h1>
+                    <h2 id="student-name"></h2>
+                </div>
+                
+                <div class="score-display">
+                    <div class="score-box success">
+                        <p>Total Score</p>
+                        <h3 id="total-score">0/0</h3>
+                        <p>Points Earned</p>
+                    </div>
+                    
+                    <div class="score-box" id="percentage-box">
+                        <p>Percentage</p>
+                        <h3 id="percentage">0%</h3>
+                        <p>Overall Performance</p>
+                    </div>
+                    
+                    <div class="score-box success" id="correct-box">
+                        <p>Correct Answers</p>
+                        <h3 id="correct-count">0</h3>
+                        <p>Well Done!</p>
+                    </div>
+                    
+                    <div class="score-box danger" id="wrong-box">
+                        <p>Wrong Answers</p>
+                        <h3 id="wrong-count">0</h3>
+                        <p>Need Review</p>
+                    </div>
+                </div>
+                
+                <div class="question-review">
+                    <h3>📋 Question-by-Question Review</h3>
+                    <div id="questions-review"></div>
+                </div>
+                
+                <div class="actions">
+                    <a href="leaderboard.html" class="btn btn-success">📊 View Leaderboard</a>
+                    <a href="student.html" class="btn btn-primary">🔄 Take Another Quiz</a>
+                </div>
+            </div>
+        </div>
+        
+        <div id="error-section" style="display: none; text-align: center; padding: 60px 20px;">
+            <h2 style="color: #ef4444;">❌ Error Loading Results</h2>
+            <p id="error-message"></p>
+            <a href="student.html" class="btn btn-primary">Back to Quiz</a>
+        </div>
+    </div>
+    
+    <script>
+        // Get student name from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentName = urlParams.get('student') || sessionStorage.getItem('studentName');
+        
+        if (!studentName) {
+            showError('Student name not found. Please take the quiz first.');
+        } else {
+            loadStudentResult();
+        }
+        
+        async function loadStudentResult() {
+            try {
+                const response = await fetch(`http://localhost:8080/api/results/student?name=${encodeURIComponent(studentName)}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load results');
+                }
+                
+                const result = await response.json();
+                displayResult(result);
+                
+            } catch (error) {
+                console.error('Error loading result:', error);
+                showError('Failed to load your results. Please try again later.');
+            }
+        }
+        
+        function displayResult(result) {
+            document.getElementById('loading-section').style.display = 'none';
+            document.getElementById('result-section').style.display = 'block';
+            
+            // Display basic info
+            document.getElementById('student-name').textContent = result.studentName;
+            document.getElementById('total-score').textContent = `${result.correctAnswers}/${result.totalQuestions}`;
+            document.getElementById('percentage').textContent = `${result.percentage}%`;
+            document.getElementById('correct-count').textContent = result.correctAnswers;
+            document.getElementById('wrong-count').textContent = result.wrongAnswers;
+            
+            // Update percentage box color
+            const percentageBox = document.getElementById('percentage-box');
+            const percentage = parseFloat(result.percentage);
+            if (percentage >= 80) {
+                percentageBox.classList.add('success');
+            } else if (percentage >= 50) {
+                percentageBox.classList.add('warning');
+            } else {
+                percentageBox.classList.add('danger');
+            }
+            
+            // Display question review
+            const reviewContainer = document.getElementById('questions-review');
+            const questions = Object.values(result.questionResults);
+            
+            questions.sort((a, b) => a.questionId - b.questionId);
+            
+            reviewContainer.innerHTML = questions.map((q, index) => `
+                <div class="question-item ${q.isCorrect ? 'correct' : 'wrong'}">
+                    <div class="question-text">
+                        ${index + 1}. ${escapeHtml(q.question)}
+                        ${q.isCorrect ? '✅' : '❌'}
+                    </div>
+                    <div class="answer-row ${q.isCorrect ? 'correct-answer' : 'wrong-answer'}">
+                        <span>Your Answer:</span>
+                        <span>${escapeHtml(q.studentAnswer)}</span>
+                    </div>
+                    ${!q.isCorrect ? `
+                        <div class="answer-row correct-answer">
+                            <span>Correct Answer:</span>
+                            <span>${escapeHtml(q.correctAnswer)}</span>
+                        </div>
+                    ` : ''}
+                    <div class="answer-row">
+                        <span>Marks:</span>
+                        <span>${q.marks}/${q.marks > 0 ? '1' : '1'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showError(message) {
+            document.getElementById('loading-section').style.display = 'none';
+            document.getElementById('error-section').style.display = 'block';
+            document.getElementById('error-message').textContent = message;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

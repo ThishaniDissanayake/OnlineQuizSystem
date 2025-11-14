@@ -129,52 +129,20 @@
 </head>
 <body>
 <div class="container">
-  <div id="evaluating-section" class="loading">
-    <div class="loading-spinner"></div>
-    <p>Evaluating your answers...</p>
-  </div>
-
-  <div id="results-section" style="display: none;">
-    <div class="success-icon">✅</div>
-    <h2>Quiz Submitted Successfully!</h2>
-    <div class="student-name" id="student-name"></div>
-    
-    <div class="score-display">
-      <h3>Your Score</h3>
-      <div class="score-value" id="score-display">-</div>
-      <div class="percentage" id="percentage-display">-</div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-label">Total Questions</div>
-        <div class="stat-value" id="total-questions">-</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Answered</div>
-        <div class="stat-value" id="total-answered">-</div>
-      </div>
-    </div>
-
-    <p style="font-size: 0.9em; color: #6b7280; margin-top: 20px;">
-      Thank you for completing the quiz!
-    </p>
-
-    <div>
-      <button id="view-evaluation-btn">View Answer Evaluation</button>
-      <button id="view-results-btn">View Leaderboard</button>
-      <button id="close-quiz-btn" class="secondary">Return to Home</button>
-    </div>
-  </div>
-
-  <div id="error-section" style="display: none;">
-    <div class="error">
-      <h2>Error</h2>
-      <p id="error-message"></p>
-      <button id="retry-btn">Try Again</button>
-      <button id="home-btn" class="secondary">Return to Home</button>
-    </div>
-  </div>
+  <div class="success-icon">✅</div>
+  <h2>Submission Completed!</h2>
+  <div class="student-name" id="student-name"></div>
+  <p><strong>Total Questions:</strong> <span id="total-questions">-</span></p>
+  <p><strong>Your Answers:</strong> <span id="total-answered">-</span></p>
+  <p style="font-size: 0.9em; color: #6b7280; margin-top: 20px;">
+    Thank you for completing the quiz!
+  </p>
+  <button id="view-results-btn" style="margin-right: 10px;">📊 View Results</button>
+  <button id="view-leaderboard-btn">🏆 View Leaderboard</button>
+  <button id="close-quiz-btn">Return to Home</button>
+  
+  <!-- Debug info (can be removed in production) -->
+  <div class="debug-info" id="debug-info"></div>
 </div>
 
 <script type="module">
@@ -280,33 +248,32 @@ import { API_ENDPOINTS } from '../js/api/endpoints.js';
   }
 
   function showError(message) {
-    document.getElementById('evaluating-section').style.display = 'none';
-    document.getElementById('error-section').style.display = 'block';
-    document.getElementById('error-message').textContent = message;
+    document.getElementById('student-name').textContent = message;
+    document.getElementById('student-name').classList.add('error');
+    document.getElementById('total-questions').textContent = 'N/A';
+    document.getElementById('total-answered').textContent = 'N/A';
+    debugInfo.innerHTML += `<br><span class="error">Error: ${message}</span>`;
   }
-
-  // Event listeners
-  document.getElementById('view-evaluation-btn')?.addEventListener('click', () => {
-    window.location.href = 'evaluation.html';
-  });
-
-  document.getElementById('view-results-btn')?.addEventListener('click', () => {
-    window.location.href = 'results.html?source=student';
-  });
-
-  document.getElementById('close-quiz-btn')?.addEventListener('click', () => {
-    cleanupAndGoHome();
-  });
-
-  document.getElementById('home-btn')?.addEventListener('click', () => {
-    cleanupAndGoHome();
-  });
-
-  document.getElementById('retry-btn')?.addEventListener('click', () => {
-    window.location.href = 'student.html';
-  });
-
-  function cleanupAndGoHome() {
+  
+  // Store student name for results page
+  let currentStudentName = null;
+  
+  document.getElementById('view-results-btn').onclick = () => {
+    if (currentStudentName) {
+      window.location.href = `result.html?student=${encodeURIComponent(currentStudentName)}`;
+    } else {
+      alert('Student name not available. Please wait for results to be evaluated.');
+    }
+  };
+  
+  document.getElementById('view-leaderboard-btn').onclick = () => {
+    window.location.href = 'leaderboard.html';
+  };
+  
+  document.getElementById('close-quiz-btn').onclick = () => {
+    console.log('🏠 Returning to home page');
+    
+    // Clean up any remaining quiz data
     const keys = Object.keys(sessionStorage);
     keys.forEach(key => {
       if (key.startsWith('quiz_')) {
@@ -314,6 +281,21 @@ import { API_ENDPOINTS } from '../js/api/endpoints.js';
       }
     });
     window.location.href = "../index.html";
+  };
+  
+  // Update currentStudentName when data is loaded
+  if (windowId) {
+    const storageKey = `quiz_${windowId}`;
+    const dataStr = sessionStorage.getItem(storageKey);
+    if (dataStr) {
+      try {
+        const data = JSON.parse(dataStr);
+        currentStudentName = data.studentName;
+        sessionStorage.setItem('studentName', currentStudentName);
+      } catch (e) {
+        console.error('Error storing student name:', e);
+      }
+    }
   }
 })();
 </script>
